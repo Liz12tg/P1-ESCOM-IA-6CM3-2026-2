@@ -1,1 +1,1 @@
-from algoritmos.hill_climbing import hill_climbing
+#from algoritmos.hill_climbing import hill_climbing

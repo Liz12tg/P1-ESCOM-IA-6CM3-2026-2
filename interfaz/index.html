@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Proyecto IA</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/estilo.css') }}">
+</head>
+
+<body>
+    <h1>Práctica 1</h1>
+    <div class="contenedor-juegos">
+        <div class="tarjeta" onclick="seleccionarJuego('frozen_lake')">
+            <h2>Frozen Lake</h2>
+        </div>
+        <div class="tarjeta">
+            <h2>8 Reinas</h2>
+        </div>
+        <div class="tarjeta">
+            <h2>Sokoban</h2>
+        </div>
+        <div class="tarjeta">
+            <h2>Tic Tac Toe</h2>
+        </div>
+    </div>
+    <div id="contenido">
+    </div>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+
+</html>

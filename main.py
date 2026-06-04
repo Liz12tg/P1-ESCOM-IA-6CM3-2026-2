@@ -1,29 +1,25 @@
+#para correrlo abre una terminal y ejecuta "python main.py"
+# abre el navegador pon "http://localhost:5000"
+
+from flask import Flask, render_template, jsonify
 from juegos.frozen_lake import FrozenLake
-from juegos.ocho_reinas import OchoReinas
-from juegos.sokoban import Sokoban
-from juegos.tic_tac_toe import TicTacToe
 
-def menu_():
-    print("1. Frozen Lake")
-    print("2. Ocho Reinas")
-    print("3. Sokoban")
-    print("4. Tic Tac Toe")
-    print("5. Salir")
+app = Flask(__name__, template_folder="interfaz",static_folder="recursos")
 
-    opcion = input("Seleccione un juego:")
+@app.route("/")
+def inicio():
+    return render_template("index.html")
 
-    if opcion == '1':
-        juego = FrozenLake()
-        juego.jugar()
-    elif opcion == '2':
-        juego = OchoReinas()
-        juego.jugar()
-    elif opcion == '3':
-        juego = Sokoban()
-        juego.jugar()
-    elif opcion == '4':
-        juego = TicTacToe()
-        juego.jugar()
-    else:
-        print("Opción no válida. Intente de nuevo.")
-        menu_()
+@app.route("/bfs")
+def ejecutar_bfs():
+    juego = FrozenLake()
+    camino = juego.resolver_bfs()
+    camino_json = []
+    for fila, col in camino:
+        camino_json.append([fila, col])
+    return jsonify({
+        "camino": camino_json
+    })
+
+if __name__ == "__main__":
+    app.run(debug=True)

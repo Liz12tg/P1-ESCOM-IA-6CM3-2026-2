@@ -1,1 +1,1 @@
-from algoritmos.adversaria import adversaria
+#from algoritmos.adversaria import adversaria
