@@ -1,55 +1,54 @@
+import json
 from collections import deque
 from algoritmos.Aestrella import a_estrella
 from algoritmos.GBFS import gbfs
 
 class Sokoban:
     def __init__(self, nivel=1):
-        # Mapas limpios
+        # Mapas extraídos con total precisión de tus capturas de pantalla
         self.niveles = {
-            1: [
-                ["#","#","#","#","#","#","#","#","#"],
-                ["#"," "," "," "," "," "," "," ","#"],
-                ["#"," "," ","#","#"," "," "," ","#"],
-                ["#"," ",".", "@","$"," "," "," ","#"],
-                ["#"," "," "," "," ","$","."," ","#"],
-                ["#"," ",".", " "," ","$"," "," ","#"],
-                ["#"," "," "," "," "," ",".", " ","#"],
-                ["#","$"," "," ","$","$","$"," ","#"],
-                ["#"," "," "," "," "," ",".", " ","#"],
-                ["#","#","#","#","#","#","#","#","#"]
+            1: [ 
+                [" "," ","#","#","#","#","#"," "],
+                ["#","#","#"," "," "," ","#"," "],
+                ["#",".","@","$"," "," ","#"," "],
+                ["#","#","#"," ","$",".","#"," "],
+                ["#",".","#","#","$"," ","#"," "],
+                ["#"," ","#"," ","."," ","#"," "],
+                ["#","$"," ","$","$","$",".","#"],
+                ["#"," "," "," ","."," "," ","#"],
+                ["#","#","#","#","#","#","#","#"]
             ],
-            2: [
-                ["#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#"],
-                ["#"," "," "," "," ","#"," "," "," "," "," "," "," "," "," "," "," "," ","#"],
-                ["#"," "," "," "," ","#"," "," "," "," "," "," "," "," "," "," "," "," ","#"],
-                ["#"," "," "," ","#","#","$"," "," "," "," "," "," "," "," "," "," "," ","#"],
-                ["#"," "," "," ","#"," "," "," ","$"," "," "," "," "," "," "," "," "," ","#"],
-                ["#"," "," "," ","#","$"," "," "," ","$"," "," "," "," "," "," "," "," ","#"],
-                ["#","#","#","#","#"," "," "," "," "," ","#","#","#","#","#","#","#","#","#"],
-                ["#"," "," "," "," "," "," "," "," "," ","#"," "," "," "," "," ",".",".","#"],
-                ["#"," ","$"," "," "," ","$"," "," "," ","#"," "," "," "," "," ",".",".","#"],
-                ["#"," "," "," "," "," "," "," "," "," "," "," ","@"," "," "," ",".",".","#"],
-                ["#","#","#","#","#","#"," "," "," "," ","#","#","#","#","#","#","#","#","#"],
-                ["#"," "," "," "," "," ","#","#","#","#","#"," "," "," "," "," "," "," ","#"],
-                ["#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#"]
+            2: [ 
+                [" "," "," "," ","#","#","#","#","#"," "," "," "," "," "," "," "," "," "," "," "," "," "," "],
+                [" "," "," "," ","#"," "," "," ","#"," "," "," "," "," "," "," "," "," "," "," "," "," "," "],
+                [" "," "," "," ","#","$"," "," ","#"," "," "," "," "," "," "," "," "," "," "," "," "," "," "],
+                [" "," ","#","#","#"," "," ","$","#","#","#"," "," "," "," "," "," "," "," "," "," "," "," "],
+                [" "," ","#"," "," ","$"," "," ","$"," ","#"," "," "," "," "," "," "," "," "," "," "," "," "],
+                ["#","#","#"," ","#"," ","#","#","#"," ","#"," "," "," "," "," ","#","#","#","#","#","#","#"],
+                ["#"," "," "," ","#"," ","#","#","#"," ","#","#","#","#","#","#","#"," "," "," ",".",".","#"],
+                ["#"," ","$"," "," ","$"," "," "," "," "," "," "," "," "," "," "," "," "," "," ",".",".","#"],
+                ["#","#","#","#","#"," ","#","#","#","#"," ","#","@","#","#","#","#"," "," "," ",".",".","#"],
+                [" "," "," "," ","#"," "," "," "," "," "," ","#","#","#"," "," ","#","#","#","#","#","#","#"],
+                [" "," "," "," ","#","#","#","#","#","#","#","#"," "," "," "," "," "," "," "," "," "," ","#"]
             ],
-            3: [
-                ["#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#"],
-                ["#",".","."," "," "," "," "," ","#"," "," "," "," "," "," "," "," ","#"],
-                ["#",".","."," "," "," "," "," ","#"," "," ","$"," "," "," ","$"," ","#"],
-                ["#",".","."," "," "," "," "," ","#"," ","$"," "," "," "," "," "," ","#"],
-                ["#",".","."," "," "," "," "," "," "," "," "," ","@"," "," "," "," ","#"],
-                ["#",".","."," "," "," "," "," "," "," "," "," "," "," "," "," "," ","#"],
-                ["#","#","#","#","#"," "," "," ","#"," "," "," "," "," ","$"," "," ","#"],
-                ["#"," "," "," "," ","#","#","#","#"," "," "," "," ","$"," ","$"," ","#"],
-                ["#"," "," "," "," "," "," "," "," "," "," "," ","$"," "," "," "," ","#"],
-                ["#"," "," "," "," ","$"," "," "," "," "," ","$"," "," ","$"," "," ","#"],
-                ["#"," "," "," "," "," "," "," "," "," "," "," "," "," "," "," "," ","#"],
-                ["#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#","#"]
+            3: [ 
+                ["#","#","#","#","#","#","#","#","#","#","#","#"," "," "],
+                ["#",".","."," "," ","#"," "," "," "," "," ","#","#","#"],
+                ["#",".","."," "," ","#"," ","$"," "," ","$"," "," ","#"],
+                ["#",".","."," "," ","#","$","#","#","#","#"," "," ","#"],
+                ["#",".","."," "," "," "," ","@"," ","#","#"," "," ","#"],
+                ["#",".","."," "," ","#"," ","#"," "," ","$"," ","#","#"],
+                ["#","#","#","#","#","#"," ","#","#","$"," ","$"," ","#"],
+                [" "," ","#"," ","$"," "," ","$"," ","$"," ","$"," ","#"],
+                [" "," ","#"," "," "," "," ","#"," "," "," "," "," ","#"],
+                [" "," ","#","#","#","#","#","#","#","#","#","#","#","#"]
             ]
         }
         self.mapa_inicial = self.niveles.get(nivel, self.niveles[1])
-        self.estado_inicial, self.metas, self.paredes = self.procesar_mapa()
+        self.jugador_inicial, self.metas, self.paredes, cajas_iniciales = self.procesar_mapa()
+        
+        self.zonas_muertas = self.calcular_zonas_muertas()
+        self.estado_inicial = (self.jugador_inicial, tuple(sorted(cajas_iniciales)))
 
     def procesar_mapa(self):
         jugador = None
@@ -62,89 +61,89 @@ class Sokoban:
                 elif val == '.': metas.add((r, c))
                 elif val == '$': cajas.add((r, c))
                 elif val == '@': jugador = (r, c)
-        return (jugador, tuple(sorted(cajas))), metas, paredes
+                elif val == '*':
+                    metas.add((r, c))
+                    cajas.add((r, c))
+        return jugador, frozenset(metas), frozenset(paredes), tuple(sorted(cajas))
+
+    def calcular_zonas_muertas(self):
+        muertas = set()
+        max_r = len(self.mapa_inicial)
+        max_c = len(self.mapa_inicial[0])
+        for r in range(max_r):
+            for c in range(max_c):
+                if (r, c) in self.paredes or (r, c) in self.metas:
+                    continue
+                arriba = (r-1, c) in self.paredes
+                abajo = (r+1, c) in self.paredes
+                izq = (r, c-1) in self.paredes
+                der = (r, c+1) in self.paredes
+                if (arriba or abajo) and (izq or der):
+                    muertas.add((r, c))
+        return muertas
 
     def es_deadlock(self, cajas):
-        """ DETECCIÓN DE PUNTOS MUERTOS: Corta ramas inútiles y acelera el algoritmo 100x """
-        for r, c in cajas:
-            if (r, c) in self.metas:
-                continue
-            # Si una caja se empuja a una esquina de paredes, es game over automático.
-            pared_v = (r-1, c) in self.paredes or (r+1, c) in self.paredes
-            pared_h = (r, c-1) in self.paredes or (r, c+1) in self.paredes
-            if pared_v and pared_h:
+        for caja in cajas:
+            if caja in self.zonas_muertas:
                 return True
         return False
-
-    def posiciones_accesibles(self, jugador, cajas_set):
-        """Devuelve todas las casillas donde el jugador puede caminar sin empujar cajas."""
-        vistos = {jugador}
-        cola = deque([jugador])
-        movimientos = [(-1, 0), (1, 0), (0, -1), (0, 1)]
-        while cola:
-            r, c = cola.popleft()
-            for dr, dc in movimientos:
-                nr, nc = r + dr, c + dc
-                if (nr, nc) in vistos or (nr, nc) in self.paredes or (nr, nc) in cajas_set:
-                    continue
-                vistos.add((nr, nc))
-                cola.append((nr, nc))
-        return vistos
 
     def obtener_vecinos(self, estado):
         jugador, cajas = estado
         cajas_set = set(cajas)
-        accesibles = self.posiciones_accesibles(jugador, cajas_set)
         movimientos = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         proximos_estados = []
 
-        for caja in cajas:
-            for dr, dc in movimientos:
-                origen = (caja[0] - dr, caja[1] - dc)
-                destino = (caja[0] + dr, caja[1] + dc)
-                if origen not in accesibles:
-                    continue
-                if destino in self.paredes or destino in cajas_set:
-                    continue
-
-                nuevas_cajas = list(cajas)
-                nuevas_cajas.remove(caja)
-                nuevas_cajas.append(destino)
-                estado_cajas = tuple(sorted(nuevas_cajas))
-
-                if not self.es_deadlock(estado_cajas):
-                    proximos_estados.append((((caja[0], caja[1]), estado_cajas), 1))
+        r, c = jugador
+        for dr, dc in movimientos:
+            nr, nc = r + dr, c + dc
+            
+            if (nr, nc) not in self.paredes and (nr, nc) not in cajas_set:
+                proximos_estados.append((((nr, nc), cajas), 1))
+            
+            elif (nr, nc) in cajas_set:
+                destino_caja_r, destino_caja_c = nr + dr, nc + dc
+                if (destino_caja_r, destino_caja_c) not in self.paredes and (destino_caja_r, destino_caja_c) not in cajas_set:
+                    nuevas_cajas = list(cajas)
+                    nuevas_cajas.remove((nr, nc))
+                    nuevas_cajas.append((destino_caja_r, destino_caja_c))
+                    
+                    if not self.es_deadlock(nuevas_cajas):
+                        estado_cajas = tuple(sorted(nuevas_cajas))
+                        proximos_estados.append((((nr, nc), estado_cajas), 1))
 
         return proximos_estados
 
     def calcular_heuristica(self, estado):
-        _, cajas = estado
-        cajas_set = set(cajas)
+        jugador, cajas = estado
         total_h = 0
-        for meta in self.metas:
-            distancias = [abs(meta[0] - caja[0]) + abs(meta[1] - caja[1]) for caja in cajas_set]
-            total_h += min(distancias) if distancias else 0
+        
+        # 1. Distancia de las cajas a las metas (multiplicada para darle más prioridad sobre el movimiento del jugador)
+        for caja in cajas:
+            distancias = [abs(meta[0] - caja[0]) + abs(meta[1] - caja[1]) for meta in self.metas]
+            total_h += (min(distancias) * 5) if distancias else 0
+            
+        # 2. PENALIZACIÓN DINÁMICA: Si el jugador camina alejándose de las cajas, el estado se vuelve carísimo.
+        # Esto evita que explore pasillos vacíos y lo obliga a quedarse pegado empujando cajas.
+        if cajas:
+            distancia_al_bloque = min([abs(jugador[0] - caja[0]) + abs(jugador[1] - caja[1]) for caja in cajas])
+            total_h += distancia_al_bloque
+            
         return total_h
 
     def es_meta(self, estado):
         _, cajas = estado
-        return len(self.metas) > 0 and self.metas.issubset(set(cajas))
+        return self.metas.issubset(set(cajas))
 
     def resolver_para_web(self, algoritmo_nombre):
         grafo_dinamico = {}
         heuristica_dinamica = {}
-        
         heuristica_dinamica[self.estado_inicial] = self.calcular_heuristica(self.estado_inicial)
         
-        # VARIABLE DE SEGURIDAD: Límite estricto de evaluaciones para no colgar el servidor nunca.
         nodos_explorados = [0]
         
         def funcion_grafo(nodo):
             nodos_explorados[0] += 1
-            # Si el laberinto explota de opciones, forzamos un corte seguro en tiempo real.
-            if nodos_explorados[0] > 12000:
-                return [] 
-                
             if nodo not in grafo_dinamico:
                 vecinos = self.obtener_vecinos(nodo)
                 grafo_dinamico[nodo] = vecinos
@@ -153,28 +152,19 @@ class Sokoban:
                         heuristica_dinamica[vecino] = self.calcular_heuristica(vecino)
             return grafo_dinamico[nodo]
 
-        # LLAMADA A TUS ARCHIVOS INDEPENDIENTES DE ALGORITMOS COMO EN 8 REINAS
         if algoritmo_nombre == "A_ESTRELLA":
-            camino_estados = a_estrella(funcion_grafo, heuristica_dinamica, self.estado_inicial, self.es_meta)
+            generador_busqueda = a_estrella(funcion_grafo, heuristica_dinamica, self.estado_inicial, self.es_meta)
         else:
-            camino_estados = gbfs(funcion_grafo, heuristica_dinamica, self.estado_inicial, self.es_meta)
+            generador_busqueda = gbfs(funcion_grafo, heuristica_dinamica, self.estado_inicial, self.es_meta)
 
-        if not camino_estados:
-            return {"status": "no_solution", "pasos": []}
-
-        pasos_json = []
-        for estado in camino_estados:
-            jugador_pos, cajas_pos = estado
-            pasos_json.append({
-                "jugador": list(jugador_pos),
-                "cajas": [list(caja) for caja in cajas_pos]
-            })
-
-        return {
-            "status": "success",
-            "total_pasos": len(pasos_json) - 1,
-            "algoritmo_usado": algoritmo_nombre,
-            "metas": [list(m) for m in self.metas],
-            "paredes": [list(p) for p in self.paredes],
-            "pasos": pasos_json
-        }
+        for evento, datos in generador_busqueda:
+            if evento == "PASO":
+                jugador, cajas = datos
+                yield f"data: {json.dumps({'evento': 'paso', 'jugador': list(jugador), 'cajas': [list(c) for c in cajas], 'metas': [list(m) for m in self.metas], 'paredes': [list(p) for p in self.paredes]})}\n\n"
+            
+            elif evento == "SOLUCION":
+                camino_json = [{"jugador": list(j), "cajas": [list(c) for c in cb]} for j, cb in datos]
+                yield f"data: {json.dumps({'evento': 'solucion', 'pasos': camino_json})}\n\n"
+            
+            elif evento == "FIN":
+                yield f"data: {json.dumps({'evento': 'error'})}\n\n"

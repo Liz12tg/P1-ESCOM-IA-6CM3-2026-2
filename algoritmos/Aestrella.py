@@ -14,13 +14,21 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
     while open_list:
         _, _, actual = heapq.heappop(open_list)
         
+        # MANDAMOS EL ESTADO ACTUAL EN TIEMPO REAL AL NAVEGADOR
+        yield "PASO", actual
+        
         if meta_func(actual):
             camino = []
             while actual is not None:
                 camino.append(actual)
                 actual = padre[actual]
-            return camino[::-1]
+            
+            # MANDAMOS LA SOLUCIÓN FINAL ENCONTRADA
+            yield "SOLUCION", camino[::-1]
+            return
         
+        if actual in closed:
+            continue
         closed.add(actual)
         
         for vecino, costo in grafo(actual):
@@ -36,4 +44,4 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
                 contador += 1
                 heapq.heappush(open_list, (f[vecino], contador, vecino))
                 
-    return None
+    yield "FIN", None

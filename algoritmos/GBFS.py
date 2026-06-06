@@ -11,13 +11,18 @@ def gbfs(grafo, heuristica, inicio, meta_func):
     while open_list:
         _, _, actual = heapq.heappop(open_list)
         
+        yield "PASO", actual
+        
         if meta_func(actual):
             camino = []
             while actual is not None:
                 camino.append(actual)
                 actual = padre[actual]
-            return camino[::-1]
+            yield "SOLUCION", camino[::-1]
+            return
         
+        if actual in closed:
+            continue
         closed.add(actual)
         
         for vecino, _ in grafo(actual):
@@ -28,4 +33,4 @@ def gbfs(grafo, heuristica, inicio, meta_func):
                 contador += 1
                 heapq.heappush(open_list, (heuristica[vecino], contador, vecino))
                 
-    return None
+    yield "FIN", None

@@ -1,3 +1,6 @@
+// ==========================================
+// CONFIGURACIÓN Y VARIABLES GLOBALES
+// ==========================================
 const mapa = [
     ["S","F","F","F"],
     ["F","H","F","H"],
@@ -5,8 +8,19 @@ const mapa = [
     ["H","F","F","G"]
 ];
 
+let evtSource = null;
+
+// ==========================================
+// CONTROLADOR PRINCIPAL DE INTERFAZ
+// ==========================================
 function seleccionarJuego(juego){
     const contenido = document.getElementById("contenido");
+    
+    if (evtSource) {
+        evtSource.close();
+        evtSource = null;
+    }
+
     if(juego === "frozen_lake"){
         contenido.innerHTML = `
             <h2>Frozen Lake</h2>
@@ -47,7 +61,7 @@ function seleccionarJuego(juego){
     }
     else if(juego === "sokoban"){
         contenido.innerHTML = `
-            <h2>Sokoban (Búsqueda Informada)</h2>
+            <h2>Sokoban (Búsqueda en Tiempo Real desde Servidor)</h2>
             
             <div class="controles" style="margin-bottom: 15px; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap;">
                 <label>Nivel:</label>
@@ -63,24 +77,21 @@ function seleccionarJuego(juego){
                     <option value="GBFS">Búsqueda Voraz (GBFS)</option>
                 </select>
 
-                <button class="boton-jugar" onclick="ejecutarSokoban()">Resolver Nivel</button>
+                <button class="boton-jugar" onclick="ejecutarSokobanStream()">Resolver en Vivo</button>
             </div>
 
             <div id="tablero-sokoban" style="margin: 20px auto; background-color: #e0d0b0; padding: 10px; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: inline-block;"></div>
-            <h3 id="estado-sokoban">Selecciona las opciones y presiona Resolver</h3>
+            <h3 id="estado-sokoban">Presiona el botón para iniciar la transmisión de la búsqueda</h3>
         `;
         document.getElementById("tablero-sokoban").style.display = "grid";
         document.getElementById("tablero-sokoban").style.gridTemplateColumns = "repeat(9, 32px)";
-        document.getElementById("tablero-sokoban").innerHTML = "<p style='color: #666; padding: 20px;'>Presione el botón para cargar la matriz.</p>";
+        document.getElementById("tablero-sokoban").innerHTML = "<div style='color: #666; padding: 20px; grid-column: 1/-1;'>Presiona el botón para enlazar la matriz.</div>";
     }
 }
 
-function conmutarOpcionesEnfriamiento() {
-    const algo = document.getElementById("select-algoritmo").value;
-    const contenedor = document.getElementById("contenedor-enfriamiento");
-    contenedor.style.display = algo === "recocido" ? "flex" : "none";
-}
-
+// ==========================================
+// LÓGICA DE JUEGO: FROZEN LAKE
+// ==========================================
 function dibujarMapa(){
     const tablero = document.getElementById("tablero");
     tablero.innerHTML = "";
@@ -113,8 +124,18 @@ async function ejecutarBFS(){
     }
 }
 
+// ==========================================
+// LÓGICA DE JUEGO: 8 REINAS
+// ==========================================
+function conmutarOpcionesEnfriamiento() {
+    const algo = document.getElementById("select-algoritmo").value;
+    const contenedor = document.getElementById("contenedor-enfriamiento");
+    contenedor.style.display = algo === "recocido" ? "flex" : "none";
+}
+
 function dibujarTableroVacio(){
     const tablero = document.getElementById("tablero-reinas");
+    if (!tablero) return;
     tablero.innerHTML = "";
     
     tablero.style.display = "grid";
@@ -142,10 +163,8 @@ function dibujarTableroVacio(){
             celda.dataset.col = col;
             
             if((fila + col) % 2 === 0) {
-                celda.classList.add("celda-blanca");
                 celda.style.backgroundColor = "#f0d9b5";
             } else {
-                celda.classList.add("celda-negra");
                 celda.style.backgroundColor = "#b58863";
             }
             tablero.appendChild(celda);
@@ -262,8 +281,12 @@ async function ejecutarReinas(){
     }
 }
 
+// ==========================================
+// LÓGICA DE JUEGO: SOKOBAN (OPTIMIZADA)
+// ==========================================
 function redibujarMatrizSokoban(paredes, metas, jugador, cajas) {
     const contenedor = document.getElementById("tablero-sokoban");
+    if (!contenedor) return;
     contenedor.innerHTML = "";
 
     const conjuntoParedes = new Set(paredes.map(p => `${p[0]},${p[1]}`));
@@ -276,6 +299,9 @@ function redibujarMatrizSokoban(paredes, metas, jugador, cajas) {
 
     contenedor.style.gridTemplateColumns = `repeat(${maxCol}, 32px)`;
 
+    // Fragmento de documento para acelerar el renderizado e impedir bloqueos
+    const fragmento = document.createDocumentFragment();
+
     for (let r = 0; r < maxFila; r++) {
         for (let c = 0; c < maxCol; c++) {
             const coord = `${r},${c}`;
@@ -287,7 +313,6 @@ function redibujarMatrizSokoban(paredes, metas, jugador, cajas) {
             celda.style.alignItems = "center";
             celda.style.justifyContent = "center";
             celda.style.fontSize = "18px";
-            celda.style.borderRadius = "2px";
 
             if (conjuntoParedes.has(coord)) {
                 celda.style.backgroundColor = "#555555";
@@ -316,53 +341,71 @@ function redibujarMatrizSokoban(paredes, metas, jugador, cajas) {
                     celda.textContent = conjuntoMetas.has(coord) ? "🤵" : "🚶‍♂️";
                 }
             }
-            contenedor.appendChild(celda);
+            fragmento.appendChild(celda);
         }
     }
+    contenedor.appendChild(fragmento);
 }
 
-async function ejecutarSokoban() {
+function ejecutarSokobanStream() {
     const nivelElegido = document.getElementById("sokoban-nivel").value;
     const algoElegido = document.getElementById("sokoban-algoritmo").value;
     const textoEstado = document.getElementById("estado-sokoban");
 
-    textoEstado.innerHTML = "Conectando con el servidor y cargando mapa... 🧠";
-
-    try {
-        const url = `/sokoban?nivel=${nivelElegido}&algoritmo=${algoElegido}`;
-        const respuesta = await fetch(url);
-        
-        if (!respuesta.ok) {
-            throw new Error(`Error en el servidor: ${respuesta.status}`);
-        }
-
-        const datos = await respuesta.json();
-
-        if (datos.status === "no_solution") {
-            textoEstado.innerHTML = "<span style='color: #ff3333; font-weight: bold;'>¡Sin solución! El algoritmo detectó un bloqueo permanente.</span>";
-            return;
-        }
-
-        const paredes = datos.paredes;
-        const metas = datos.metas;
-        const pasos = datos.pasos;
-
-        redibujarMatrizSokoban(paredes, metas, pasos[0].jugador, pasos[0].cajas);
-        
-        textoEstado.innerHTML = "¡Mapa cargado! Procesando solución en tiempo real...";
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const velocidad = pasos.length > 50 ? 80 : 250;
-
-        for (let i = 0; i < pasos.length; i++) {
-            textoEstado.innerHTML = `Visualizando: Paso <strong>${i}</strong> de ${pasos.length - 1} (${datos.algoritmo_usado})`;
-            redibujarMatrizSokoban(paredes, metas, pasos[i].jugador, pasos[i].cajas);
-            await new Promise(resolve => setTimeout(resolve, velocidad));
-        }
-
-        textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>¡Completado con éxito en ${datos.total_pasos} pasos usando ${datos.algoritmo_usado}!</span>`;
-    } catch (error) {
-        console.error(error);
-        textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>Error: No se pudo recibir la respuesta del backend. Revisa la consola de Python.</span>`;
+    if (evtSource) { 
+        evtSource.close(); 
     }
+
+    let totalNodos = 0;
+    let cacheParedes = null;
+    let cacheMetas = null;
+
+    textoEstado.innerHTML = "⚡ Conectando tubería en vivo con Python...";
+    evtSource = new EventSource(`/sokoban?nivel=${nivelElegido}&algoritmo=${algoElegido}`);
+
+    evtSource.onmessage = function(event) {
+        const datos = JSON.parse(event.data);
+
+        if (datos.evento === "paso") {
+            totalNodos++;
+            cacheParedes = datos.paredes;
+            cacheMetas = datos.metas;
+            
+            // Renderizamos cada 250 nodos para que el navegador vuele al no tener límites
+            if (totalNodos % 250 === 0 || totalNodos < 50) {
+                window.requestAnimationFrame(() => {
+                    textoEstado.innerHTML = `🔍 IA Evaluando nodo #${totalNodos} en tiempo real...`;
+                    redibujarMatrizSokoban(datos.paredes, datos.metas, datos.jugador, datos.cajas);
+                });
+            }
+        }
+        
+        else if (datos.evento === "solucion") {
+            evtSource.close();
+            window.requestAnimationFrame(async () => {
+                textoEstado.innerHTML = "<span style='color: #00aa00; font-weight: bold;'>(Solución Hallada) Graficando ruta final paso a paso...</span>";
+                
+                const pasos = datos.pasos;
+                // Reproducción pausada y limpia de la solución ganadora
+                for (let i = 0; i < pasos.length; i++) {
+                    redibujarMatrizSokoban(cacheParedes, cacheMetas, pasos[i].jugador, pasos[i].cajas);
+                    await new Promise(resolve => setTimeout(resolve, 80));
+                }
+                textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>🏆 ¡Completado con éxito en ${pasos.length - 1} pasos! Nodos totales explorados: ${totalNodos}</span>`;
+            });
+        } 
+        
+        else if (datos.evento === "error") {
+            evtSource.close();
+            window.requestAnimationFrame(() => {
+                textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>❌ Búsqueda finalizada sin solución. Se exploraron ${totalNodos} nodos antes del límite.</span>`;
+            });
+        }
+    };
+
+    evtSource.onerror = function() { 
+        if (evtSource) {
+            evtSource.close(); 
+        }
+    };
 }
