@@ -45,6 +45,34 @@ function seleccionarJuego(juego){
         `;
         dibujarTableroVacio();
     }
+    else if(juego === "sokoban"){
+        contenido.innerHTML = `
+            <h2>Sokoban (Búsqueda Informada)</h2>
+            
+            <div class="controles" style="margin-bottom: 15px; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                <label>Nivel:</label>
+                <select id="sokoban-nivel">
+                    <option value="1">Nivel 1 (6 Cajas)</option>
+                    <option value="2">Nivel 2 (6 Cajas - Pasillo)</option>
+                    <option value="3">Nivel 3 (10 Cajas - Masivo)</option>
+                </select>
+
+                <label>Algoritmo:</label>
+                <select id="sokoban-algoritmo">
+                    <option value="A_ESTRELLA">A* (A-Star Search)</option>
+                    <option value="GBFS">Búsqueda Voraz (GBFS)</option>
+                </select>
+
+                <button class="boton-jugar" onclick="ejecutarSokoban()">Resolver Nivel</button>
+            </div>
+
+            <div id="tablero-sokoban" style="margin: 20px auto; background-color: #e0d0b0; padding: 10px; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: inline-block;"></div>
+            <h3 id="estado-sokoban">Selecciona las opciones y presiona Resolver</h3>
+        `;
+        document.getElementById("tablero-sokoban").style.display = "grid";
+        document.getElementById("tablero-sokoban").style.gridTemplateColumns = "repeat(9, 32px)";
+        document.getElementById("tablero-sokoban").innerHTML = "<p style='color: #666; padding: 20px;'>Presione el botón para cargar la matriz.</p>";
+    }
 }
 
 function conmutarOpcionesEnfriamiento() {
@@ -235,5 +263,113 @@ async function ejecutarReinas(){
     } catch (error) {
         console.error(error);
         textoEstado.textContent = "Error al procesar la solicitud.";
+    }
+}
+
+function redibujarMatrizSokoban(paredes, metas, jugador, cajas) {
+    const contenedor = document.getElementById("tablero-sokoban");
+    contenedor.innerHTML = "";
+
+    const conjuntoParedes = new Set(paredes.map(p => `${p[0]},${p[1]}`));
+    const conjuntoMetas = new Set(metas.map(m => `${m[0]},${m[1]}`));
+    const conjuntoCajas = new Set(cajas.map(c => `${c[0]},${c[1]}`));
+    const stringJugador = `${jugador[0]},${jugador[1]}`;
+
+    const maxFila = Math.max(...paredes.map(p => p[0])) + 1;
+    const maxCol = Math.max(...paredes.map(p => p[1])) + 1;
+
+    contenedor.style.gridTemplateColumns = `repeat(${maxCol}, 32px)`;
+
+    for (let r = 0; r < maxFila; r++) {
+        for (let c = 0; c < maxCol; c++) {
+            const coord = `${r},${c}`;
+            const celda = document.createElement("div");
+            
+            celda.style.width = "32px";
+            celda.style.height = "32px";
+            celda.style.display = "flex";
+            celda.style.alignItems = "center";
+            celda.style.justifyContent = "center";
+            celda.style.fontSize = "18px";
+            celda.style.borderRadius = "2px";
+
+            if (conjuntoParedes.has(coord)) {
+                celda.style.backgroundColor = "#555555";
+                celda.style.border = "1px solid #333";
+                celda.textContent = "🧱";
+            } else {
+                celda.style.backgroundColor = "#f5e5c5";
+                celda.style.border = "1px solid #e5d5b5";
+
+                if (conjuntoMetas.has(coord)) {
+                    celda.style.backgroundColor = "#ffcccc";
+                    celda.textContent = "🔴";
+                }
+                if (conjuntoCajas.has(coord)) {
+                    if (conjuntoMetas.has(coord)) {
+                        celda.style.backgroundColor = "#aaccff";
+                        celda.textContent = "📦";
+                        celda.style.border = "2px solid #0055ff";
+                    } else {
+                        celda.style.backgroundColor = "#d2b48c";
+                        celda.textContent = "🟫";
+                        celda.style.border = "1px solid #8b4513";
+                    }
+                }
+                if (coord === stringJugador) {
+                    celda.textContent = conjuntoMetas.has(coord) ? "🤵" : "🚶‍♂️";
+                }
+            }
+            contenedor.appendChild(celda);
+        }
+    }
+}
+
+async function ejecutarSokoban() {
+    const nivelElegido = document.getElementById("sokoban-nivel").value;
+    const algoElegido = document.getElementById("sokoban-algoritmo").value;
+    const textoEstado = document.getElementById("estado-sokoban");
+    const contenedorTablero = document.getElementById("tablero-sokoban");
+
+    textoEstado.innerHTML = "Conectando con el servidor y cargando mapa... 🧠";
+
+    try {
+        const url = `/sokoban?nivel=${nivelElegido}&algoritmo=${algoElegido}`;
+        const respuesta = await fetch(url);
+        
+        if (!respuesta.ok) {
+            throw new Error(`Error en el servidor: ${respuesta.status}`);
+        }
+
+        const datos = await respuesta.json();
+
+        if (datos.status === "no_solution") {
+            textoEstado.innerHTML = "<span style='color: #ff3333; font-weight: bold;'>¡Sin solución! El algoritmo detectó un bloqueo permanente.</span>";
+            return;
+        }
+
+        const paredes = datos.paredes;
+        const metas = datos.metas;
+        const pasos = datos.pasos;
+
+        // Limpiamos el texto de "Presione el botón..." y pintamos el estado 0 de inmediato
+        redibujarMatrizSokoban(paredes, metas, pasos[0].jugador, pasos[0].cajas);
+        
+        textoEstado.innerHTML = "¡Mapa cargado! Procesando solución en tiempo real...";
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const velocidad = pasos.length > 50 ? 80 : 250;
+
+        // Ejecución de la animación paso a paso
+        for (let i = 0; i < pasos.length; i++) {
+            textoEstado.innerHTML = `Visualizando: Paso <strong>${i}</strong> de ${pasos.length - 1} (${datos.algoritmo_usado})`;
+            redibujarMatrizSokoban(paredes, metas, pasos[i].jugador, pasos[i].cajas);
+            await new Promise(resolve => setTimeout(resolve, velocidad));
+        }
+
+        textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>¡Completado con éxito en ${datos.total_pasos} pasos usando ${datos.algoritmo_usado}!</span>`;
+    } catch (error) {
+        console.error(error);
+        textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>Error: No se pudo recibir la respuesta del backend. Revisa la consola de Python.</span>`;
     }
 }

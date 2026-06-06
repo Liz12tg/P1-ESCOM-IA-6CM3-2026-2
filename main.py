@@ -4,6 +4,7 @@
 from flask import Flask, render_template, jsonify, request
 from juegos.frozen_lake import FrozenLake
 from juegos.ocho_reinas import OchoReinas
+from juegos.sokoban import Sokoban
 
 app = Flask(__name__, template_folder="interfaz", static_folder="recursos")
 
@@ -25,6 +26,15 @@ def ejecutar_reinas():
     
     juego = OchoReinas()
     resultado = juego.resolver_juego(variante=algoritmo, enfriamiento=enfriamiento)
+    
+    return jsonify(resultado)
+
+@app.route("/sokoban")
+def ejecutar_sokoban():
+    nivel = int(request.args.get("nivel", 1))
+    algoritmo = request.args.get("algoritmo", "A_ESTRELLA")
+    juego = Sokoban(nivel=nivel)
+    resultado = juego.resolver_para_web(algoritmo)
     
     return jsonify(resultado)
 
