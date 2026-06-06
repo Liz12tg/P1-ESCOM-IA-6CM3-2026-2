@@ -3,6 +3,7 @@
 
 from flask import Flask, render_template, jsonify
 from juegos.frozen_lake import FrozenLake
+from juegos.ocho_reinas import OchoReinas
 
 app = Flask(__name__, template_folder="interfaz",static_folder="recursos")
 
@@ -20,6 +21,12 @@ def ejecutar_bfs():
     return jsonify({
         "camino": camino_json
     })
+
+@app.route("/reinas")
+def ejecutar_reinas():
+    juego = OchoReinas()
+    resultado = juego.resolver_hill_climbing(variante="estricto")
+    return jsonify(resultado)
 
 if __name__ == "__main__":
     app.run(debug=True)
