@@ -1,6 +1,5 @@
-
 import random
-from algoritmos.hill_climbing import hill_climbing_estricto
+from algoritmos.hill_climbing import hill_climbing_estricto, recocido_simulado
 
 class OchoReinas:
     def __init__(self):
@@ -28,13 +27,17 @@ class OchoReinas:
                 reinas_seguras += 1
         return reinas_seguras
 
-    def resolver_hill_climbing(self, variante="estricto"):
-        """ Ejecuta la variante de Hill Climbing solicitada y retorna el historial de pasos """
+    def resolver_juego(self, variante="estricto", enfriamiento="exponencial"):
+        """ Ejecuta el algoritmo solicitado y retorna el historial completo """
         if variante == "estricto":
             historial = hill_climbing_estricto(self.estado_inicial, self.calcular_puntaje)
-            return {
-                "inicial": self.estado_inicial,
-                "pasos": historial,
-                "efectivo": self.calcular_puntaje(historial[-1]) == 8
-            }
-        return {"inicial": self.estado_inicial, "pasos": [self.estado_inicial], "efectivo": False}
+        elif variante == "recocido":
+            historial = recocido_simulado(self.estado_inicial, self.calcular_puntaje, enfriamiento)
+        else:
+            historial = [self.estado_inicial]
+            
+        return {
+            "inicial": self.estado_inicial,
+            "pasos": historial,
+            "efectivo": self.calcular_puntaje(historial[-1]) == 8
+        }
