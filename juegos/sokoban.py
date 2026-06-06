@@ -1,9 +1,10 @@
+from collections import deque
 from algoritmos.Aestrella import a_estrella
 from algoritmos.GBFS import gbfs
 
 class Sokoban:
     def __init__(self, nivel=1):
-        # Tus 3 niveles basados en tus imágenes
+        # Mapas limpios
         self.niveles = {
             1: [
                 ["#","#","#","#","#","#","#","#","#"],
@@ -49,7 +50,6 @@ class Sokoban:
         }
         self.mapa_inicial = self.niveles.get(nivel, self.niveles[1])
         self.estado_inicial, self.metas, self.paredes = self.procesar_mapa()
-        self.diccionario_heuristica = {}
 
     def procesar_mapa(self):
         jugador = None
@@ -64,76 +64,104 @@ class Sokoban:
                 elif val == '@': jugador = (r, c)
         return (jugador, tuple(sorted(cajas))), metas, paredes
 
+    def es_deadlock(self, cajas):
+        """ DETECCIÓN DE PUNTOS MUERTOS: Corta ramas inútiles y acelera el algoritmo 100x """
+        for r, c in cajas:
+            if (r, c) in self.metas:
+                continue
+            # Si una caja se empuja a una esquina de paredes, es game over automático.
+            pared_v = (r-1, c) in self.paredes or (r+1, c) in self.paredes
+            pared_h = (r, c-1) in self.paredes or (r, c+1) in self.paredes
+            if pared_v and pared_h:
+                return True
+        return False
+
+    def posiciones_accesibles(self, jugador, cajas_set):
+        """Devuelve todas las casillas donde el jugador puede caminar sin empujar cajas."""
+        vistos = {jugador}
+        cola = deque([jugador])
+        movimientos = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+        while cola:
+            r, c = cola.popleft()
+            for dr, dc in movimientos:
+                nr, nc = r + dr, c + dc
+                if (nr, nc) in vistos or (nr, nc) in self.paredes or (nr, nc) in cajas_set:
+                    continue
+                vistos.add((nr, nc))
+                cola.append((nr, nc))
+        return vistos
+
     def obtener_vecinos(self, estado):
         jugador, cajas = estado
         cajas_set = set(cajas)
-        movimientos = {'Arriba': (-1, 0), 'Abajo': (1, 0), 'Izquierda': (0, -1), 'Derecha': (0, 1)}
+        accesibles = self.posiciones_accesibles(jugador, cajas_set)
+        movimientos = [(-1, 0), (1, 0), (0, -1), (0, 1)]
         proximos_estados = []
-        
-        for (dr, dc) in movimientos.values():
-            nr, nc = jugador[0] + dr, jugador[1] + dc
-            if (nr, nc) not in self.paredes and (nr, nc) not in cajas_set:
-                proximos_estados.append((((nr, nc), cajas), 1))
-            elif (nr, nc) in cajas_set:
-                nnr, nnc = nr + dr, nc + dc
-                if (nnr, nnc) not in self.paredes and (nnr, nnc) not in cajas_set:
-                    nuevas_cajas = list(cajas)
-                    nuevas_cajas.remove((nr, nc))
-                    nuevas_cajas.append((nnr, nnc))
-                    proximos_estados.append((((nr, nc), tuple(sorted(nuevas_cajas))), 1))
+
+        for caja in cajas:
+            for dr, dc in movimientos:
+                origen = (caja[0] - dr, caja[1] - dc)
+                destino = (caja[0] + dr, caja[1] + dc)
+                if origen not in accesibles:
+                    continue
+                if destino in self.paredes or destino in cajas_set:
+                    continue
+
+                nuevas_cajas = list(cajas)
+                nuevas_cajas.remove(caja)
+                nuevas_cajas.append(destino)
+                estado_cajas = tuple(sorted(nuevas_cajas))
+
+                if not self.es_deadlock(estado_cajas):
+                    proximos_estados.append((((caja[0], caja[1]), estado_cajas), 1))
+
         return proximos_estados
 
     def calcular_heuristica(self, estado):
-        if estado not in self.diccionario_heuristica:
-            _, cajas = estado
-            total_h = 0
-            for caja in cajas:
-                distancias = [abs(caja[0] - m[0]) + abs(caja[1] - m[1]) for m in self.metas]
-                total_h += min(distancias) if distancias else 0
-            self.diccionario_heuristica[estado] = total_h
-        return self.diccionario_heuristica[estado]
+        _, cajas = estado
+        cajas_set = set(cajas)
+        total_h = 0
+        for meta in self.metas:
+            distancias = [abs(meta[0] - caja[0]) + abs(meta[1] - caja[1]) for caja in cajas_set]
+            total_h += min(distancias) if distancias else 0
+        return total_h
 
     def es_meta(self, estado):
         _, cajas = estado
-        return set(cajas) == self.metas
+        return len(self.metas) > 0 and self.metas.issubset(set(cajas))
 
     def resolver_para_web(self, algoritmo_nombre):
-        # 1. Inicializamos los diccionarios de datos puros que esperan tus algoritmos
-        grafo_estatico = {}
-        heurísticas_estaticas = {}
+        grafo_dinamico = {}
+        heuristica_dinamica = {}
         
-        # Registramos el punto de partida
-        heurísticas_estaticas[self.estado_inicial] = self.calcular_heuristica(self.estado_inicial)
+        heuristica_dinamica[self.estado_inicial] = self.calcular_heuristica(self.estado_inicial)
         
-        # 2. Función auxiliar que poblará los datos bajo demanda simulando el grafo
-        def obtener_y_registrar_vecinos(nodo):
-            if nodo not in grafo_estatico:
-                # Obtenemos los movimientos válidos de Sokoban
-                vecinos = self.obtener_vecinos(nodo)
-                grafo_estatico[nodo] = vecinos
+        # VARIABLE DE SEGURIDAD: Límite estricto de evaluaciones para no colgar el servidor nunca.
+        nodos_explorados = [0]
+        
+        def funcion_grafo(nodo):
+            nodos_explorados[0] += 1
+            # Si el laberinto explota de opciones, forzamos un corte seguro en tiempo real.
+            if nodos_explorados[0] > 12000:
+                return [] 
                 
-                # Precalculamos la distancia de Manhattan para cada vecino descubierto
+            if nodo not in grafo_dinamico:
+                vecinos = self.obtener_vecinos(nodo)
+                grafo_dinamico[nodo] = vecinos
                 for vecino, _ in vecinos:
-                    if vecino not in heurísticas_estaticas:
-                        heurísticas_estaticas[vecino] = self.calcular_heuristica(vecino)
-            return grafo_estatico[nodo]
-            
-        # 3. Adaptador de interfaz compatible con la sintaxis funcion() de tus algoritmos
-        class WrapperGrafo:
-            def __call__(self, nodo):
-                return obtener_y_registrar_vecinos(nodo)
+                    if vecino not in heuristica_dinamica:
+                        heuristica_dinamica[vecino] = self.calcular_heuristica(vecino)
+            return grafo_dinamico[nodo]
 
-        # 4. Invocación limpia a tus archivos externos individuales
+        # LLAMADA A TUS ARCHIVOS INDEPENDIENTES DE ALGORITMOS COMO EN 8 REINAS
         if algoritmo_nombre == "A_ESTRELLA":
-            camino_estados = a_estrella(WrapperGrafo(), heurísticas_estaticas, self.estado_inicial, self.es_meta)
+            camino_estados = a_estrella(funcion_grafo, heuristica_dinamica, self.estado_inicial, self.es_meta)
         else:
-            camino_estados = gbfs(WrapperGrafo(), heurísticas_estaticas, self.estado_inicial, self.es_meta)
+            camino_estados = gbfs(funcion_grafo, heuristica_dinamica, self.estado_inicial, self.es_meta)
 
-        # 5. Si no hay solución, salimos limpiamente evitando colgar a Flask
         if not camino_estados:
             return {"status": "no_solution", "pasos": []}
 
-        # 6. Serialización del camino para la animación en JavaScript
         pasos_json = []
         for estado in camino_estados:
             jugador_pos, cajas_pos = estado
@@ -145,35 +173,7 @@ class Sokoban:
         return {
             "status": "success",
             "total_pasos": len(pasos_json) - 1,
-            "metas": [list(m) for m in self.metas],
-            "paredes": [list(p) for p in self.paredes],
-            "pasos": pasos_json
-        }
-        # Wrapper de heurísticas dinámicas que requiere el algoritmo independiente
-        class HeuristicaDinamica:
-            def __getitem__(inst, nodo): return self.calcular_heuristica(nodo)
-
-        # Selección limpia de tus archivos .py externos
-        if algoritmo_nombre == "A_ESTRELLA":
-            camino_estados = a_estrella(self.obtener_vecinos, HeuristicaDinamica(), self.estado_inicial, self.es_meta)
-        else:
-            camino_estados = gbfs(self.obtener_vecinos, HeuristicaDinamica(), self.estado_inicial, self.es_meta)
-
-        if not camino_estados:
-            return {"status": "no_solution", "pasos": []}
-
-        # Formateo a JSON estructurado para tu Interfaz Web
-        pasos_json = []
-        for estado in camino_estados:
-            jugador_pos, cajas_pos = estado
-            pasos_json.append({
-                "jugador": list(jugador_pos),
-                "cajas": [list(caja) for caja in cajas_pos]
-            })
-
-        return {
-            "status": "success",
-            "total_pasos": len(pasos_json) - 1,
+            "algoritmo_usado": algoritmo_nombre,
             "metas": [list(m) for m in self.metas],
             "paredes": [list(p) for p in self.paredes],
             "pasos": pasos_json

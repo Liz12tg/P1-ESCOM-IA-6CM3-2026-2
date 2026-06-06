@@ -113,10 +113,6 @@ async function ejecutarBFS(){
     }
 }
 
-//----------------------------
-//---- funciones 8 reinas ----
-//----------------------------
-
 function dibujarTableroVacio(){
     const tablero = document.getElementById("tablero-reinas");
     tablero.innerHTML = "";
@@ -329,7 +325,6 @@ async function ejecutarSokoban() {
     const nivelElegido = document.getElementById("sokoban-nivel").value;
     const algoElegido = document.getElementById("sokoban-algoritmo").value;
     const textoEstado = document.getElementById("estado-sokoban");
-    const contenedorTablero = document.getElementById("tablero-sokoban");
 
     textoEstado.innerHTML = "Conectando con el servidor y cargando mapa... 🧠";
 
@@ -352,7 +347,6 @@ async function ejecutarSokoban() {
         const metas = datos.metas;
         const pasos = datos.pasos;
 
-        // Limpiamos el texto de "Presione el botón..." y pintamos el estado 0 de inmediato
         redibujarMatrizSokoban(paredes, metas, pasos[0].jugador, pasos[0].cajas);
         
         textoEstado.innerHTML = "¡Mapa cargado! Procesando solución en tiempo real...";
@@ -360,7 +354,6 @@ async function ejecutarSokoban() {
 
         const velocidad = pasos.length > 50 ? 80 : 250;
 
-        // Ejecución de la animación paso a paso
         for (let i = 0; i < pasos.length; i++) {
             textoEstado.innerHTML = `Visualizando: Paso <strong>${i}</strong> de ${pasos.length - 1} (${datos.algoritmo_usado})`;
             redibujarMatrizSokoban(paredes, metas, pasos[i].jugador, pasos[i].cajas);

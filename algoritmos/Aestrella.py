@@ -12,10 +12,8 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
     closed = set()
     
     while open_list:
-        # Extraemos el nodo con menor F(n)
         _, _, actual = heapq.heappop(open_list)
         
-        # Evaluamos si cumple la condición de meta usando la función de Sokoban
         if meta_func(actual):
             camino = []
             while actual is not None:
@@ -25,7 +23,6 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
         
         closed.add(actual)
         
-        # ¡OJO! Se llama como función: grafo(actual)
         for vecino, costo in grafo(actual):
             if vecino in closed:
                 continue
