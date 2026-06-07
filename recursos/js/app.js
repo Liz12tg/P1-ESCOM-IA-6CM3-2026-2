@@ -1,411 +1,600 @@
-// ==========================================
-// CONFIGURACIÓN Y VARIABLES GLOBALES
-// ==========================================
+// =========================================================================
+// ARCADE AI ENGINE — Controller principal (v2)
+// Carrusel centrado · paleta fresca · SFX 8-bit (WebAudio)
+// Endpoints intactos: /bfs /dfs /reinas /sokoban (SSE)
+// =========================================================================
+
 const mapa = [
-    ["S","F","F","F"],
-    ["F","H","F","H"],
-    ["F","F","F","H"],
-    ["H","F","F","G"]
+    ["S", "F", "F", "F"],
+    ["F", "H", "F", "H"],
+    ["F", "F", "F", "H"],
+    ["H", "F", "F", "G"]
 ];
 
 let evtSource = null;
 
-// ==========================================
-// CONTROLADOR PRINCIPAL DE INTERFAZ
-// ==========================================
-function seleccionarJuego(juego){
+// =========================================================================
+// SFX — sintetizador 8-bit con WebAudio (sin archivos externos)
+// =========================================================================
+const SFX = (() => {
+    let ctx = null;
+    let enabled = true;
+    const init = () => {
+        if (!ctx) {
+            try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+            catch (e) { enabled = false; }
+        }
+        if (ctx && ctx.state === 'suspended') ctx.resume();
+    };
+    // Bip básico con envolvente
+    const tone = (freq, dur = 0.08, type = 'square', vol = 0.15, slide = 0) => {
+        if (!enabled) return;
+        init();
+        if (!ctx) return;
+        const t0 = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, t0);
+        if (slide) osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t0 + dur);
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(t0); osc.stop(t0 + dur + 0.02);
+    };
+    const seq = (notes, gap = 0.08) => {
+        if (!enabled) return;
+        notes.forEach((n, i) => setTimeout(() => tone(n.f, n.d || 0.09, n.t || 'square', n.v || 0.14, n.s || 0), i * gap * 1000));
+    };
+    return {
+        nav:     () => tone(440, 0.05, 'square', 0.10),
+        select:  () => seq([{f:523, d:.07}, {f:784, d:.10}]),
+        start:   () => seq([{f:523, d:.08}, {f:659, d:.08}, {f:784, d:.10}, {f:1046, d:.14}]),
+        step:    () => tone(660, 0.04, 'square', 0.08),
+        push:    () => tone(180, 0.10, 'triangle', 0.18, -40),
+        win:     () => seq([{f:523, d:.10}, {f:659, d:.10}, {f:784, d:.10}, {f:1046, d:.22, v:.18}]),
+        fail:    () => seq([{f:330, d:.12, s:-100}, {f:220, d:.18, s:-120}]),
+        click:   () => tone(800, 0.03, 'square', 0.08),
+        back:    () => tone(300, 0.08, 'square', 0.10, -100),
+        toggle: (on) => { enabled = on; }
+    };
+})();
+
+// Cualquier click "despierta" el AudioContext
+document.addEventListener('click', () => SFX.click && (window.__audioReady || (window.__audioReady = SFX.nav())), { once: true });
+
+// =========================================================================
+// SVG PIECES
+// =========================================================================
+const SVG = {
+    queen: `<svg class="queenSvg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="qg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fff4c4"/>
+                <stop offset="50%" stop-color="#ffc857"/>
+                <stop offset="100%" stop-color="#9a6a18"/>
+            </linearGradient>
+        </defs>
+        <path d="M6 12 L9 6 L12 11 L16 4 L20 11 L23 6 L26 12 L24 22 L8 22 Z" fill="url(#qg)" stroke="#3d2410" stroke-width="1.2" stroke-linejoin="round"/>
+        <circle cx="9" cy="6" r="1.6" fill="#fff" stroke="#3d2410" stroke-width=".8"/>
+        <circle cx="16" cy="4" r="1.8" fill="#ff5d6c" stroke="#3d2410" stroke-width=".8"/>
+        <circle cx="23" cy="6" r="1.6" fill="#fff" stroke="#3d2410" stroke-width=".8"/>
+        <rect x="6" y="22" width="20" height="3" rx="1" fill="#c89540" stroke="#3d2410" stroke-width="1"/>
+        <rect x="5" y="25" width="22" height="3.5" rx="1.5" fill="#ffc857" stroke="#3d2410" stroke-width="1"/>
+    </svg>`,
+    box: `<svg class="boxSvg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ffb070"/>
+                <stop offset="50%" stop-color="#e07a2a"/>
+                <stop offset="100%" stop-color="#8a3f10"/>
+            </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="28" height="28" rx="3" fill="url(#bg)" stroke="#2a1408" stroke-width="1.8"/>
+        <rect x="5" y="5" width="22" height="22" fill="none" stroke="#2a1408" stroke-width="1.3"/>
+        <line x1="5" y1="5" x2="27" y2="27" stroke="#2a1408" stroke-width="1.3"/>
+        <line x1="27" y1="5" x2="5" y2="27" stroke="#2a1408" stroke-width="1.3"/>
+        <rect x="2" y="2" width="28" height="4" fill="rgba(255,255,255,.3)"/>
+        <rect x="2" y="26" width="28" height="2" fill="rgba(0,0,0,.25)"/>
+    </svg>`,
+    worker: `<svg class="workerSvg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="9" r="5" fill="#ffd6a8" stroke="#2a1a08" stroke-width="1.4"/>
+        <path d="M9 9 a7 4 0 0 1 14 0 l-1 -2 a6 3 0 0 0 -12 0 z" fill="#ffc857" stroke="#2a1a08" stroke-width="1.2"/>
+        <rect x="8" y="14" width="16" height="13" rx="3" fill="#5cf0ff" stroke="#0a3a48" stroke-width="1.5"/>
+        <rect x="8" y="14" width="16" height="3" fill="#3ac7d8"/>
+        <rect x="11" y="27" width="3" height="4" fill="#2a1a08"/>
+        <rect x="18" y="27" width="3" height="4" fill="#2a1a08"/>
+        <circle cx="14" cy="9" r=".9" fill="#1a0a00"/>
+        <circle cx="18" cy="9" r=".9" fill="#1a0a00"/>
+    </svg>`,
+    player: `<svg viewBox="0 0 32 32" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="16" cy="16" r="10" fill="#5cf0ff" stroke="#003540" stroke-width="2"/>
+        <circle cx="16" cy="16" r="6" fill="#fff" opacity=".45"/>
+    </svg>`
+};
+
+// =========================================================================
+// CARRUSEL  (CSS hace el centrado real; JS solo mueve por slot)
+// =========================================================================
+const GAMES = ['frozen_lake', 'ocho_reinas', 'sokoban'];
+let activeIndex = 0;
+
+function getSlotWidth() {
+    // ancho de cabinet + gap (debe coincidir con CSS .cabinet width + .carouselTrack gap)
+    const cab = document.querySelector('.cabinet');
+    if (!cab) return 420;
+    const styles = getComputedStyle(cab);
+    const w = parseFloat(styles.width) || 360;
+    const trackStyles = getComputedStyle(document.getElementById('carouselTrack'));
+    const gap = parseFloat(trackStyles.columnGap || trackStyles.gap) || 60;
+    return w + gap;
+}
+
+function renderCarousel() {
+    const track = document.getElementById('carouselTrack');
+    const slot = getSlotWidth();
+    track.style.transform = `translateX(${-activeIndex * slot}px)`;
+
+    const cabinets = track.querySelectorAll('.cabinet');
+    cabinets.forEach((c, i) => c.classList.toggle('active', i === activeIndex));
+
+    const dots = document.querySelectorAll('#carouselDots .dot');
+    dots.forEach((d, i) => d.classList.toggle('active', i === activeIndex));
+}
+
+function setActive(i) {
+    const newIdx = (i + GAMES.length) % GAMES.length;
+    if (newIdx !== activeIndex) SFX.nav();
+    activeIndex = newIdx;
+    renderCarousel();
+}
+
+function initCarousel() {
+    const dotsWrap = document.getElementById('carouselDots');
+    GAMES.forEach((_, i) => {
+        const d = document.createElement('button');
+        d.className = 'dot' + (i === 0 ? ' active' : '');
+        d.addEventListener('click', () => setActive(i));
+        dotsWrap.appendChild(d);
+    });
+
+    document.getElementById('navPrev').addEventListener('click', () => setActive(activeIndex - 1));
+    document.getElementById('navNext').addEventListener('click', () => setActive(activeIndex + 1));
+
+    document.addEventListener('keydown', (e) => {
+        if (document.getElementById('contenido').children.length) return;
+        if (e.key === 'ArrowLeft')  setActive(activeIndex - 1);
+        if (e.key === 'ArrowRight') setActive(activeIndex + 1);
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            seleccionarJuego(GAMES[activeIndex]);
+        }
+    });
+
+    document.querySelectorAll('.pressStartBtn').forEach(btn => {
+        btn.addEventListener('click', () => { SFX.start(); seleccionarJuego(btn.dataset.game); });
+    });
+    document.querySelectorAll('.cabinet').forEach((c, i) => {
+        c.addEventListener('click', (e) => {
+            if (i !== activeIndex && !e.target.closest('.pressStartBtn')) setActive(i);
+        });
+    });
+
+    // Swipe táctil
+    let startX = 0;
+    const track = document.getElementById('carouselTrack');
+    track.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
+    track.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (Math.abs(dx) > 50) setActive(activeIndex + (dx < 0 ? 1 : -1));
+    });
+
+    // Re-render al redimensionar (slot puede cambiar en breakpoints)
+    window.addEventListener('resize', () => renderCarousel());
+
+    drawPreviews();
+    // primer render tras layout
+    requestAnimationFrame(() => renderCarousel());
+}
+
+// ── Mini previews en los cabinets ──
+function drawPreviews() {
+    const f = document.getElementById('previewFrozen');
+    const q = document.getElementById('previewReinas');
+    const s = document.getElementById('previewSokoban');
+
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'screenCell';
+        const ch = mapa[r][c];
+        if (ch === 'S')      cell.style.background = 'linear-gradient(135deg,#8dffc4,#2db86e)';
+        else if (ch === 'G') cell.style.background = 'linear-gradient(135deg,#ffe57a,#ffa83d)';
+        else if (ch === 'H') cell.style.background = 'radial-gradient(circle,#0a1525,#000)';
+        else                 cell.style.background = 'linear-gradient(135deg,#d9f0fa,#7cc5dc)';
+        cell.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,.4)';
+        cell.style.borderRadius = '3px';
+        f.appendChild(cell);
+    }
+
+    for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'screenCell';
+        cell.style.background = (r + c) % 2 === 0 ? '#fff3d4' : '#2a6e8a';
+        q.appendChild(cell);
+        if ([0,4,7,5,2,6,1,3][c] === r) {
+            cell.innerHTML = '<div style="width:65%;height:65%;background:radial-gradient(circle at 35% 30%,#fff4c4,#ffc857 60%,#9a6a18);border-radius:50% 50% 20% 20%;box-shadow:0 0 8px rgba(255,200,87,.8);"></div>';
+            cell.style.display = 'flex'; cell.style.alignItems = 'center'; cell.style.justifyContent = 'center';
+        }
+    }
+
+    const layout = [
+        'WWWWW',
+        'W.B.W',
+        'W.@.W',
+        'WWWWW'
+    ];
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) {
+        const cell = document.createElement('div');
+        cell.className = 'screenCell';
+        const ch = layout[r][c];
+        const floor = 'linear-gradient(135deg,#f0d9b8,#d8b88a)';
+        if (ch === 'W')      cell.style.background = 'linear-gradient(135deg,#4a3a5a,#2a2038)';
+        else if (ch === 'B') { cell.style.background = floor; cell.innerHTML = '<div style="width:80%;height:80%;background:linear-gradient(135deg,#ffb070,#8a3f10);border:1.5px solid #2a1408;border-radius:3px;box-shadow:0 0 6px rgba(255,160,92,.6);"></div>'; cell.style.display='flex';cell.style.alignItems='center';cell.style.justifyContent='center';}
+        else if (ch === '@') { cell.style.background = floor; cell.innerHTML = '<div style="width:75%;height:75%;background:radial-gradient(circle at 35% 30%,#fff,#5cf0ff 60%,#0a3a48);border-radius:50%;box-shadow:0 0 8px rgba(92,240,255,.7);"></div>'; cell.style.display='flex';cell.style.alignItems='center';cell.style.justifyContent='center';}
+        else                 cell.style.background = floor;
+        cell.style.borderRadius = '3px';
+        s.appendChild(cell);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', initCarousel);
+
+// =========================================================================
+// SELECTOR PRINCIPAL DE JUEGO
+// =========================================================================
+function seleccionarJuego(juego) {
     const contenido = document.getElementById("contenido");
-    
-    if (evtSource) {
-        evtSource.close();
-        evtSource = null;
-    }
+    const seleccion = document.getElementById("seleccionView");
+    if (!contenido) return;
 
-    if(juego === "frozen_lake"){
-        contenido.innerHTML = `
-            <h2>Frozen Lake</h2>
-            <div id="tablero"></div>
-            <button class="boton-jugar" onclick="ejecutarBFS()"> Jugar</button>
-            <h3>Cola BFS</h3>
-            <pre id="cola"></pre>
-        `;
-        dibujarMapa();
-    }
-    else if(juego === "ocho_reinas"){
-        contenido.innerHTML = `
-            <h2>Problema de las 8 Reinas</h2>
-            
-            <div class="controles" style="margin-bottom: 15px; display: flex; gap: 10px; justify-content: center; align-items: center;">
-                <label>Algoritmo:</label>
-                <select id="select-algoritmo" onchange="conmutarOpcionesEnfriamiento()">
-                    <option value="estricto">Hill Climbing Estricto</option>
-                    <option value="recocido">Recocido Simulado</option>
-                </select>
-                
-                <div id="contenedor-enfriamiento" style="display: none; gap: 10px; align-items: center;">
-                    <label>Enfriamiento (T):</label>
-                    <select id="select-enfriamiento">
-                        <option value="exponencial">Exponencial (T = T * alfa)</option>
-                        <option value="lineal">Lineal (T = T - c)</option>
-                        <option value="inversa">Inversa Proporcional</option>
-                    </select>
+    if (evtSource) { evtSource.close(); evtSource = null; }
+
+    seleccion.style.display = 'none';
+
+    const themeMap = { frozen_lake: 'ice', ocho_reinas: 'chess', sokoban: 'warehouse' };
+    const titleMap = { frozen_lake: 'FROZEN LAKE', ocho_reinas: '8 QUEENS', sokoban: 'SOKOBAN' };
+    const theme = themeMap[juego];
+
+    let bodyHtml = '';
+    if (juego === 'frozen_lake') {
+        bodyHtml = `
+            <div class="gameScreenWrap">
+                <div class="gameScreen"><div id="tableroFrozen" class="boardFrozen"></div></div>
+            </div>
+            <aside class="gamePanel">
+                <div>
+                    <div class="panelTitle">Strategy</div>
+                    <div class="controlsRow">
+                        <label>Algoritmo</label>
+                        <select id="selectFrozenAlgo" class="selectInput">
+                            <option value="bfs">BFS · Breadth First</option>
+                            <option value="dfs">DFS · Depth First</option>
+                        </select>
+                        <button class="btnAction" onclick="ejecutarFrozenSimulacion()">▶ EJECUTAR</button>
+                    </div>
                 </div>
-
-                <button class="boton-jugar" onclick="ejecutarReinas()">Resolver</button>
+                <div>
+                    <div class="panelTitle">Metrics</div>
+                    <div class="metricsGrid">
+                        <div class="metricCard"><span class="label">Algo</span><span id="frozenLblTipo" class="value">--</span></div>
+                        <div class="metricCard"><span class="label">Pasos</span><span id="pasosContador" class="value">0</span></div>
+                    </div>
+                </div>
+                <div class="terminalWrap">
+                    <div class="panelTitle">Console</div>
+                    <div id="colaLogs" class="terminalConsole">&gt; STANDBY...</div>
+                </div>
+            </aside>`;
+    } else if (juego === 'ocho_reinas') {
+        bodyHtml = `
+            <div class="gameScreenWrap">
+                <div class="gameScreen"><div id="tableroReinas" class="boardChess"></div></div>
             </div>
-
-            <div id="tablero-reinas" class="tablero-ajedrez"></div>
-            <h3 id="estado-reinas">Presiona Resolver para iniciar</h3>
-        `;
-        dibujarTableroVacio();
-    }
-    else if(juego === "sokoban"){
-        contenido.innerHTML = `
-            <h2>Sokoban (Búsqueda en Tiempo Real desde Servidor)</h2>
-            
-            <div class="controles" style="margin-bottom: 15px; display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap;">
-                <label>Nivel:</label>
-                <select id="sokoban-nivel">
-                    <option value="1">Nivel 1 (6 Cajas)</option>
-                    <option value="2">Nivel 2 (6 Cajas - Pasillo)</option>
-                    <option value="3">Nivel 3 (10 Cajas - Masivo)</option>
-                </select>
-
-                <label>Algoritmo:</label>
-                <select id="sokoban-algoritmo">
-                    <option value="A_ESTRELLA">A* (A-Star Search)</option>
-                    <option value="GBFS">Búsqueda Voraz (GBFS)</option>
-                </select>
-
-                <button class="boton-jugar" onclick="ejecutarSokobanStream()">Resolver en Vivo</button>
+            <aside class="gamePanel">
+                <div>
+                    <div class="panelTitle">Config</div>
+                    <div class="controlsRow">
+                        <label>Algoritmo</label>
+                        <select id="selectAlgoritmo" class="selectInput" onchange="alternarEnfriamiento()">
+                            <option value="estricto">Hill Climbing</option>
+                            <option value="recocido">Simulated Annealing</option>
+                        </select>
+                        <div id="wrapperEnfriamiento" style="display:none; flex-direction:column; gap:6px;">
+                            <label>Enfriamiento</label>
+                            <select id="selectEnfriamiento" class="selectInput">
+                                <option value="logaritmico">Logarítmico</option>
+                                <option value="exponencial">Exponencial</option>
+                            </select>
+                        </div>
+                        <button class="btnAction" onclick="ejecutarReinasSimulacion()">▶ RESOLVER</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="panelTitle">Conflict Analysis</div>
+                    <div class="metricsGrid">
+                        <div class="metricCard"><span class="label">Iter</span><span id="reinasIteracion" class="value">0</span></div>
+                        <div class="metricCard"><span class="label">h(n)</span><span id="reinasCosto" class="value">0</span></div>
+                    </div>
+                </div>
+                <div class="terminalWrap">
+                    <div class="panelTitle">Console</div>
+                    <div id="reinasLogs" class="terminalConsole">&gt; READY</div>
+                </div>
+            </aside>`;
+    } else if (juego === 'sokoban') {
+        bodyHtml = `
+            <div class="gameScreenWrap">
+                <div class="gameScreen"><div id="tableroSokoban" class="boardSokoban"></div></div>
             </div>
+            <aside class="gamePanel">
+                <div>
+                    <div class="panelTitle">Heuristics</div>
+                    <div class="controlsRow">
+                        <label>Nivel</label>
+                        <select id="sokobanNivel" class="selectInput">
+                            <option value="1">Nivel 1</option>
+                            <option value="2">Nivel 2</option>
+                        </select>
+                        <label>Algoritmo</label>
+                        <select id="sokobanAlgoritmo" class="selectInput">
+                            <option value="A_ESTRELLA">A* — f=g+h</option>
+                            <option value="GBFS">GBFS — f=h</option>
+                        </select>
+                        <button class="btnAction" onclick="ejecutarSokobanSimulacion()">▶ CALCULAR</button>
+                    </div>
+                </div>
+                <div>
+                    <div class="panelTitle">Search Tree</div>
+                    <div class="metricsGrid">
+                        <div class="metricCard"><span class="label">Nodos</span><span id="sokobanNodos" class="value">0</span></div>
+                        <div class="metricCard"><span class="label">f(n)</span><span id="sokobanMetricasCompleta" class="value">--</span></div>
+                    </div>
+                </div>
+                <div class="terminalWrap">
+                    <div class="panelTitle">Console</div>
+                    <div id="sokobanLogs" class="terminalConsole">&gt; SSE waiting...</div>
+                </div>
+            </aside>`;
+    }
 
-            <div id="tablero-sokoban" style="margin: 20px auto; background-color: #e0d0b0; padding: 10px; border-radius: 5px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: inline-block;"></div>
-            <h3 id="estado-sokoban">Presiona el botón para iniciar la transmisión de la búsqueda</h3>
-        `;
-        document.getElementById("tablero-sokoban").style.display = "grid";
-        document.getElementById("tablero-sokoban").style.gridTemplateColumns = "repeat(9, 32px)";
-        document.getElementById("tablero-sokoban").innerHTML = "<div style='color: #666; padding: 20px; grid-column: 1/-1;'>Presiona el botón para enlazar la matriz.</div>";
+    contenido.innerHTML = `
+        <div class="gameCabinet" data-theme="${theme}">
+            <div class="gameTopBar">
+                <button class="backBtn" onclick="volverASeleccion()">◄ BACK</button>
+                <div class="gameTitle">${titleMap[juego]}</div>
+                <div style="font-family:var(--f-mono); font-size:10px; color:var(--text-dim); letter-spacing:.2em;">RUNNING</div>
+            </div>
+            <div class="gameBody">${bodyHtml}</div>
+        </div>`;
+
+    if (juego === 'frozen_lake') dibujarMapaFrozen();
+    if (juego === 'ocho_reinas') dibujarTableroReinasVacio();
+    if (juego === 'sokoban')     inicializarContenedorSokobanVacio();
+}
+
+function volverASeleccion() {
+    SFX.back();
+    if (evtSource) { evtSource.close(); evtSource = null; }
+    document.getElementById('contenido').innerHTML = '';
+    document.getElementById('seleccionView').style.display = 'block';
+    requestAnimationFrame(() => renderCarousel());
+}
+
+// =========================================================================
+// FROZEN LAKE
+// =========================================================================
+function dibujarMapaFrozen() {
+    const cont = document.getElementById('tableroFrozen');
+    if (!cont) return;
+    cont.innerHTML = '';
+    for (let f = 0; f < 4; f++) for (let c = 0; c < 4; c++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cellFrozen');
+        const ch = mapa[f][c];
+        if (ch === 'S')      { cell.classList.add('cellStart'); cell.textContent = 'START'; }
+        else if (ch === 'G') { cell.classList.add('cellGoal');  cell.textContent = 'GOAL';  }
+        else if (ch === 'H') { cell.classList.add('cellHole'); }
+        else                 { cell.classList.add('cellIce'); }
+        cont.appendChild(cell);
     }
 }
 
-// ==========================================
-// LÓGICA DE JUEGO: FROZEN LAKE
-// ==========================================
-function dibujarMapa(){
-    const tablero = document.getElementById("tablero");
-    tablero.innerHTML = "";
-    for(let fila=0; fila<mapa.length; fila++){
-        for(let col=0; col<mapa[fila].length; col++){
-            const celda = document.createElement("div");
-            celda.classList.add("celda");
-            const valor = mapa[fila][col];
-            celda.textContent = valor;
-            if(valor==="S") celda.classList.add("inicio");
-            else if(valor==="G") celda.classList.add("meta");
-            else if(valor==="H") celda.classList.add("agujero");
-            else celda.classList.add("hielo");
-            tablero.appendChild(celda);
-        }
-    }
-}
+async function ejecutarFrozenSimulacion() {
+    const metodo = document.getElementById('selectFrozenAlgo').value;
+    const log = document.getElementById('colaLogs');
+    const lbl = document.getElementById('frozenLblTipo');
+    dibujarMapaFrozen();
+    lbl.textContent = metodo.toUpperCase();
+    log.innerHTML = `&gt; INIT ${metodo.toUpperCase()}<br>&gt; Scanning graph...<br>`;
+    SFX.select();
 
-async function ejecutarBFS(){
-    const respuesta = await fetch("/bfs");
-    const datos = await respuesta.json();
-    const camino = datos.camino;
-    const celdas = document.querySelectorAll(".celda");
-    for(const paso of camino){
-        const fila = paso[0];
-        const col = paso[1];
-        const indice = fila * 4 + col;
-        celdas[indice].classList.add("camino");
-        await new Promise(resolve => setTimeout(resolve,700));
-    }
-}
-
-// ==========================================
-// LÓGICA DE JUEGO: 8 REINAS
-// ==========================================
-function conmutarOpcionesEnfriamiento() {
-    const algo = document.getElementById("select-algoritmo").value;
-    const contenedor = document.getElementById("contenedor-enfriamiento");
-    contenedor.style.display = algo === "recocido" ? "flex" : "none";
-}
-
-function dibujarTableroVacio(){
-    const tablero = document.getElementById("tablero-reinas");
-    if (!tablero) return;
-    tablero.innerHTML = "";
-    
-    tablero.style.display = "grid";
-    tablero.style.gridTemplateColumns = "repeat(8, 45px)";
-    tablero.style.gridTemplateRows = "repeat(8, 45px)";
-    tablero.style.width = "360px"; 
-    tablero.style.margin = "20px auto";
-    tablero.style.border = "3px solid #222";
-    tablero.style.boxShadow = "0 4px 15px rgba(0,0,0,0.3)";
-    
-    for(let fila=0; fila<8; fila++){
-        for(let col=0; col<8; col++){
-            const celda = document.createElement("div");
-            celda.classList.add("celda");
-            celda.style.width = "45px";
-            celda.style.height = "45px";
-            celda.style.boxSizing = "border-box";
-            celda.style.display = "flex";
-            celda.style.alignItems = "center";
-            celda.style.justifyContent = "center";
-            celda.style.fontSize = "26px";
-            celda.style.transition = "all 0.15s ease";
-            
-            celda.dataset.fila = fila;
-            celda.dataset.col = col;
-            
-            if((fila + col) % 2 === 0) {
-                celda.style.backgroundColor = "#f0d9b5";
-            } else {
-                celda.style.backgroundColor = "#b58863";
-            }
-            tablero.appendChild(celda);
-        }
-    }
-}
-
-function obtenerConflictos(reinas) {
-    let conflictos = Array(8).fill(false);
-    for (let i = 0; i < 8; i++) {
-        for (let j = i + 1; j < 8; j++) {
-            if (reinas[i] === reinas[j] || Math.abs(reinas[i] - reinas[j]) === Math.abs(i - j)) {
-                conflictos[i] = true;
-                conflictos[j] = true;
-            }
-        }
-    }
-    return conflictos;
-}
-
-function actualizarTableroReinas(reinas) {
-    const celdas = document.querySelectorAll("#tablero-reinas .celda");
-    const listaConflictos = obtenerConflictos(reinas);
-    
-    celdas.forEach(c => {
-        c.textContent = "";
-        c.style.boxShadow = "none";
-        const f = parseInt(c.dataset.fila);
-        const col = parseInt(c.dataset.col);
-        c.style.backgroundColor = (f + col) % 2 === 0 ? "#f0d9b5" : "#b58863";
-    });   
-    
-    for(let col=0; col<8; col++) {
-        let fila = reinas[col];
-        let indice = fila * 8 + col;
-        
-        if(celdas[indice]) {
-            celdas[indice].textContent = "R";
-            if (listaConflictos[col]) {
-                celdas[indice].style.backgroundColor = "rgba(255, 99, 71, 0.7)";
-                celdas[indice].style.boxShadow = "inset 0 0 10px #ff0000";
-            } else {
-                celdas[indice].style.backgroundColor = "rgba(144, 238, 144, 0.7)";
-                celdas[indice].style.boxShadow = "inset 0 0 10px #00aa00";
-            }
-        }
-    }
-}
-
-async function ejecutarReinas(){
-    const algoElegido = document.getElementById("select-algoritmo").value;
-    const enfriamientoElegido = document.getElementById("select-enfriamiento").value;
-    const textoEstado = document.getElementById("estado-reinas");
-    
-    textoEstado.textContent = "Calculando en el servidor...";
-    
     try {
-        const url = `/reinas?algoritmo=${algoElegido}&enfriamiento=${enfriamientoElegido}`;
-        const respuesta = await fetch(url);
-        const datos = await respuesta.json();
+        const res = await fetch(`/${metodo}`);
+        const datos = await res.json();
+        const camino = datos.camino;
+        const cells = document.querySelectorAll('#tableroFrozen .cellFrozen');
+        const cnt = document.getElementById('pasosContador');
+        let n = 0;
+        for (const paso of camino) {
+            n++;
+            cnt.textContent = n;
+            const idx = paso[0] * 4 + paso[1];
+            if (cells[idx]) cells[idx].classList.add('cellPath');
+            log.innerHTML += `&gt; Node [${paso[0]},${paso[1]}]<br>`;
+            log.scrollTop = log.scrollHeight;
+            SFX.step();
+            await new Promise(r => setTimeout(r, 200));
+        }
+        log.innerHTML += '<br>&gt; <span style="color:var(--neon-green);">[DONE] Path resolved.</span>';
+        SFX.win();
+    } catch (e) {
+        log.innerHTML = '&gt; <span style="color:var(--neon-red);">[ERR] Backend unreachable.</span>';
+        SFX.fail();
+    }
+}
+
+// =========================================================================
+// 8 REINAS
+// =========================================================================
+function alternarEnfriamiento() {
+    const el = document.getElementById('selectAlgoritmo').value;
+    const w = document.getElementById('wrapperEnfriamiento');
+    if (w) w.style.display = el === 'recocido' ? 'flex' : 'none';
+}
+
+function dibujarTableroReinasVacio() {
+    const cont = document.getElementById('tableroReinas');
+    if (!cont) return;
+    cont.innerHTML = '';
+    for (let f = 0; f < 8; f++) for (let c = 0; c < 8; c++) {
+        const cell = document.createElement('div');
+        cell.classList.add('cellChess', (f + c) % 2 === 0 ? 'cellChessLight' : 'cellChessDark');
+        cell.dataset.fila = f; cell.dataset.columna = c;
+        cont.appendChild(cell);
+    }
+}
+
+function actualizarPosicionesReinas(vec) {
+    const cells = document.querySelectorAll('#tableroReinas .cellChess');
+    cells.forEach(c => {
+        c.innerHTML = '';
+        const f = +c.dataset.fila, col = +c.dataset.columna;
+        c.className = 'cellChess ' + ((f + col) % 2 === 0 ? 'cellChessLight' : 'cellChessDark');
+    });
+    const conflict = Array(8).fill(false);
+    let coste = 0;
+    for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) {
+        if (vec[i] === vec[j] || Math.abs(vec[i] - vec[j]) === Math.abs(i - j)) {
+            conflict[i] = conflict[j] = true; coste++;
+        }
+    }
+    document.getElementById('reinasCosto').textContent = coste;
+    for (let c = 0; c < 8; c++) {
+        const f = vec[c], idx = f * 8 + c;
+        if (cells[idx]) {
+            cells[idx].innerHTML = SVG.queen;
+            cells[idx].classList.add(conflict[c] ? 'cellQueenConflict' : 'cellQueenSafe');
+        }
+    }
+}
+
+async function ejecutarReinasSimulacion() {
+    const algo = document.getElementById('selectAlgoritmo').value;
+    const enf = document.getElementById('selectEnfriamiento')?.value || 'logaritmico';
+    const log = document.getElementById('reinasLogs');
+    const txt = document.getElementById('reinasIteracion');
+    log.innerHTML = '&gt; INIT local search...<br>';
+    SFX.select();
+    try {
+        const res = await fetch(`/reinas?algoritmo=${algo}&enfriamiento=${enf}`);
+        const datos = await res.json();
         const pasos = datos.pasos;
-        
-        const celdas = document.querySelectorAll("#tablero-reinas .celda");
-        
-        actualizarTableroReinas(pasos[0]);
-        const retardo = pasos.length > 30 ? 150 : 500;
-        await new Promise(resolve => setTimeout(resolve, 600));
-        
-        for(let i = 1; i < pasos.length; i++){
-            textoEstado.textContent = `Evaluando mutación... Iteración ${i} de ${pasos.length - 1}`;
-            
-            const estadoAnterior = pasos[i-1];
-            const estadoActual = pasos[i];
-            
-            let colCambiada = -1;
-            for(let c=0; c<8; c++) {
-                if(estadoAnterior[c] !== estadoActual[c]) {
-                    colCambiada = c;
-                    break;
-                }
-            }
-            
-            if(colCambiada !== -1) {
-                const filaOrigen = estadoAnterior[colCambiada];
-                const filaDestino = estadoActual[colCambiada];
-                
-                for(let f = 0; f < 8; f++) {
-                    if (f === filaOrigen) continue; 
-                    let indiceFantasma = f * 8 + colCambiada;
-                    celdas[indiceFantasma].textContent = "R";
-                    celdas[indiceFantasma].style.color = "rgba(0, 0, 0, 0.25)";
-                    
-                    await new Promise(resolve => setTimeout(resolve, 30)); 
-                    
-                    if (f !== filaDestino) {
-                        celdas[indiceFantasma].textContent = "";
-                        celdas[indiceFantasma].style.color = "";
-                    }
-                }
-            }
-            
-            actualizarTableroReinas(estadoActual);
-            await new Promise(resolve => setTimeout(resolve, retardo));
+        for (let i = 0; i < pasos.length; i++) {
+            txt.textContent = i;
+            actualizarPosicionesReinas(pasos[i]);
+            log.innerHTML += `&gt; iter[${i}] state=[${pasos[i].join(',')}]<br>`;
+            log.scrollTop = log.scrollHeight;
+            if (i % 4 === 0) SFX.step();
+            await new Promise(r => setTimeout(r, pasos.length > 40 ? 50 : 200));
         }
-        
-        if(datos.efectivo) {
-            textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>¡Éxito con ${algoElegido}! Solución óptima hallada en ${pasos.length - 1} pasos.</span>`;
+        if (datos.efectivo) { log.innerHTML += '<br>&gt; <span style="color:var(--neon-green);">[SUCCESS] Optimal solution.</span>'; SFX.win(); }
+        else                { log.innerHTML += '<br>&gt; <span style="color:var(--neon-red);">[STOP] Local optimum.</span>';     SFX.fail(); }
+    } catch (e) {
+        log.innerHTML = '&gt; <span style="color:var(--neon-red);">[ERR] Backend failure.</span>';
+        SFX.fail();
+    }
+}
+
+// =========================================================================
+// SOKOBAN
+// =========================================================================
+function inicializarContenedorSokobanVacio() {
+    const cont = document.getElementById('tableroSokoban');
+    if (cont) cont.innerHTML = '<div style="color:var(--text-dim); font-family:var(--f-screen); font-size:18px; padding:30px;">&gt; AWAITING DATA STREAM...</div>';
+}
+
+function redibujarSokoban(paredes, metas, jugador, cajas) {
+    const cont = document.getElementById('tableroSokoban');
+    if (!cont) return;
+    cont.innerHTML = '';
+    const sP = new Set(paredes.map(p => `${p[0]},${p[1]}`));
+    const sM = new Set(metas.map(m => `${m[0]},${m[1]}`));
+    const sC = new Set(cajas.map(c => `${c[0]},${c[1]}`));
+    const jKey = `${jugador[0]},${jugador[1]}`;
+    const maxC = Math.max(...paredes.map(p => p[1])) + 1;
+    const maxF = Math.max(...paredes.map(p => p[0])) + 1;
+    cont.style.gridTemplateColumns = `repeat(${maxC}, 44px)`;
+    for (let r = 0; r < maxF; r++) for (let c = 0; c < maxC; c++) {
+        const k = `${r},${c}`;
+        const cell = document.createElement('div');
+        cell.classList.add('cellSk');
+        if (sP.has(k)) cell.classList.add('cellSkWall');
+        else if (k === jKey) {
+            cell.classList.add('cellSkFloor');
+            cell.innerHTML = SVG.worker;
+        } else if (sC.has(k)) {
+            const onTarget = sM.has(k);
+            cell.classList.add('cellSkFloor');
+            if (onTarget) cell.classList.add('cellSkBoxOnTarget');
+            cell.innerHTML = SVG.box;
+        } else if (sM.has(k)) {
+            cell.classList.add('cellSkTarget');
         } else {
-            textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>Terminado sin convergencia total (Óptimo Local / Enfriamiento finalizado).</span>`;
+            cell.classList.add('cellSkFloor');
         }
-    } catch (error) {
-        console.error(error);
-        textoEstado.textContent = "Error al procesar la solicitud.";
+        cont.appendChild(cell);
     }
 }
 
-// ==========================================
-// LÓGICA DE JUEGO: SOKOBAN (OPTIMIZADA)
-// ==========================================
-function redibujarMatrizSokoban(paredes, metas, jugador, cajas) {
-    const contenedor = document.getElementById("tablero-sokoban");
-    if (!contenedor) return;
-    contenedor.innerHTML = "";
-
-    const conjuntoParedes = new Set(paredes.map(p => `${p[0]},${p[1]}`));
-    const conjuntoMetas = new Set(metas.map(m => `${m[0]},${m[1]}`));
-    const conjuntoCajas = new Set(cajas.map(c => `${c[0]},${c[1]}`));
-    const stringJugador = `${jugador[0]},${jugador[1]}`;
-
-    const maxFila = Math.max(...paredes.map(p => p[0])) + 1;
-    const maxCol = Math.max(...paredes.map(p => p[1])) + 1;
-
-    contenedor.style.gridTemplateColumns = `repeat(${maxCol}, 32px)`;
-
-    // Fragmento de documento para acelerar el renderizado e impedir bloqueos
-    const fragmento = document.createDocumentFragment();
-
-    for (let r = 0; r < maxFila; r++) {
-        for (let c = 0; c < maxCol; c++) {
-            const coord = `${r},${c}`;
-            const celda = document.createElement("div");
-            
-            celda.style.width = "32px";
-            celda.style.height = "32px";
-            celda.style.display = "flex";
-            celda.style.alignItems = "center";
-            celda.style.justifyContent = "center";
-            celda.style.fontSize = "18px";
-
-            if (conjuntoParedes.has(coord)) {
-                celda.style.backgroundColor = "#555555";
-                celda.style.border = "1px solid #333";
-                celda.textContent = "🧱";
-            } else {
-                celda.style.backgroundColor = "#f5e5c5";
-                celda.style.border = "1px solid #e5d5b5";
-
-                if (conjuntoMetas.has(coord)) {
-                    celda.style.backgroundColor = "#ffcccc";
-                    celda.textContent = "🔴";
-                }
-                if (conjuntoCajas.has(coord)) {
-                    if (conjuntoMetas.has(coord)) {
-                        celda.style.backgroundColor = "#aaccff";
-                        celda.textContent = "📦";
-                        celda.style.border = "2px solid #0055ff";
-                    } else {
-                        celda.style.backgroundColor = "#d2b48c";
-                        celda.textContent = "🟫";
-                        celda.style.border = "1px solid #8b4513";
-                    }
-                }
-                if (coord === stringJugador) {
-                    celda.textContent = conjuntoMetas.has(coord) ? "🤵" : "🚶‍♂️";
-                }
-            }
-            fragmento.appendChild(celda);
-        }
-    }
-    contenedor.appendChild(fragmento);
-}
-
-function ejecutarSokobanStream() {
-    const nivelElegido = document.getElementById("sokoban-nivel").value;
-    const algoElegido = document.getElementById("sokoban-algoritmo").value;
-    const textoEstado = document.getElementById("estado-sokoban");
-
-    if (evtSource) { 
-        evtSource.close(); 
-    }
-
-    let totalNodos = 0;
-    let cacheParedes = null;
-    let cacheMetas = null;
-
-    textoEstado.innerHTML = "⚡ Conectando tubería en vivo con Python...";
-    evtSource = new EventSource(`/sokoban?nivel=${nivelElegido}&algoritmo=${algoElegido}`);
-
-    evtSource.onmessage = function(event) {
-        const datos = JSON.parse(event.data);
-
-        if (datos.evento === "paso") {
-            totalNodos++;
-            cacheParedes = datos.paredes;
-            cacheMetas = datos.metas;
-            
-            // Renderizamos cada 250 nodos para que el navegador vuele al no tener límites
-            if (totalNodos % 250 === 0 || totalNodos < 50) {
+function ejecutarSokobanSimulacion() {
+    const nivel = document.getElementById('sokobanNivel').value;
+    const algo = document.getElementById('sokobanAlgoritmo').value;
+    const log = document.getElementById('sokobanLogs');
+    const tN = document.getElementById('sokobanNodos');
+    const tM = document.getElementById('sokobanMetricasCompleta');
+    if (evtSource) evtSource.close();
+    let cnt = 0, cacheP = null, cacheM = null;
+    log.innerHTML = '&gt; SSE link establishing...<br>';
+    SFX.select();
+    evtSource = new EventSource(`/sokoban?nivel=${nivel}&algoritmo=${algo}`);
+    evtSource.onmessage = (event) => {
+        const d = JSON.parse(event.data);
+        if (d.evento === 'paso') {
+            cnt++;
+            tN.textContent = cnt;
+            tM.textContent = algo === 'A_ESTRELLA' ? 'f=g+h' : 'f=h';
+            cacheP = d.paredes; cacheM = d.metas;
+            if (cnt % 40 === 0 || cnt < 15) {
                 window.requestAnimationFrame(() => {
-                    textoEstado.innerHTML = `Evaluando nodo #${totalNodos} en tiempo real...`;
-                    redibujarMatrizSokoban(datos.paredes, datos.metas, datos.jugador, datos.cajas);
+                    log.innerHTML += `&gt; Expanding node #${cnt}<br>`;
+                    log.scrollTop = log.scrollHeight;
+                    redibujarSokoban(d.paredes, d.metas, d.jugador, d.cajas);
                 });
             }
-        }
-        
-        else if (datos.evento === "solucion") {
+        } else if (d.evento === 'solucion') {
             evtSource.close();
             window.requestAnimationFrame(async () => {
-                textoEstado.innerHTML = "<span style='color: #00aa00; font-weight: bold;'>(Solución Hallada) Graficando ruta final paso a paso...</span>";
-                
-                const pasos = datos.pasos;
-                // Reproducción pausada y limpia de la solución ganadora
-                for (let i = 0; i < pasos.length; i++) {
-                    redibujarMatrizSokoban(cacheParedes, cacheMetas, pasos[i].jugador, pasos[i].cajas);
-                    await new Promise(resolve => setTimeout(resolve, 80));
+                log.innerHTML += '<br>&gt; <span style="color:var(--neon-green);">[FOUND] Replaying solution...</span><br>';
+                for (const p of d.pasos) {
+                    redibujarSokoban(cacheP, cacheM, p.jugador, p.cajas);
+                    SFX.push();
+                    await new Promise(r => setTimeout(r, 120));
                 }
-                textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>¡Completado con éxito en ${pasos.length - 1} pasos! Nodos totales explorados: ${totalNodos}</span>`;
-            });
-        } 
-        
-        else if (datos.evento === "error") {
-            evtSource.close();
-            window.requestAnimationFrame(() => {
-                textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>Búsqueda finalizada sin solución. Se exploraron ${totalNodos} nodos antes del límite.</span>`;
+                log.innerHTML += '&gt; <span style="color:var(--neon-yellow);">[COMPLETE]</span>';
+                SFX.win();
             });
         }
     };
-
-    evtSource.onerror = function() { 
-        if (evtSource) {
-            evtSource.close(); 
-        }
-    };
+    evtSource.onerror = () => { SFX.fail(); };
 }
