@@ -374,7 +374,7 @@ function ejecutarSokobanStream() {
             // Renderizamos cada 250 nodos para que el navegador vuele al no tener límites
             if (totalNodos % 250 === 0 || totalNodos < 50) {
                 window.requestAnimationFrame(() => {
-                    textoEstado.innerHTML = `🔍 IA Evaluando nodo #${totalNodos} en tiempo real...`;
+                    textoEstado.innerHTML = `Evaluando nodo #${totalNodos} en tiempo real...`;
                     redibujarMatrizSokoban(datos.paredes, datos.metas, datos.jugador, datos.cajas);
                 });
             }
@@ -391,14 +391,14 @@ function ejecutarSokobanStream() {
                     redibujarMatrizSokoban(cacheParedes, cacheMetas, pasos[i].jugador, pasos[i].cajas);
                     await new Promise(resolve => setTimeout(resolve, 80));
                 }
-                textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>🏆 ¡Completado con éxito en ${pasos.length - 1} pasos! Nodos totales explorados: ${totalNodos}</span>`;
+                textoEstado.innerHTML = `<span style='color: #00aa00; font-weight: bold;'>¡Completado con éxito en ${pasos.length - 1} pasos! Nodos totales explorados: ${totalNodos}</span>`;
             });
         } 
         
         else if (datos.evento === "error") {
             evtSource.close();
             window.requestAnimationFrame(() => {
-                textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>❌ Búsqueda finalizada sin solución. Se exploraron ${totalNodos} nodos antes del límite.</span>`;
+                textoEstado.innerHTML = `<span style='color: #ff3333; font-weight: bold;'>Búsqueda finalizada sin solución. Se exploraron ${totalNodos} nodos antes del límite.</span>`;
             });
         }
     };
