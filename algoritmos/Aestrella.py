@@ -14,6 +14,10 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
     while open_list:
         _, _, actual = heapq.heappop(open_list)
         
+        if actual in closed:
+            continue
+        closed.add(actual)
+        
         # MANDAMOS EL ESTADO ACTUAL EN TIEMPO REAL AL NAVEGADOR
         yield "PASO", actual
         
@@ -27,21 +31,21 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
             yield "SOLUCION", camino[::-1]
             return
         
-        if actual in closed:
-            continue
-        closed.add(actual)
-        
         for vecino, costo in grafo(actual):
             if vecino in closed:
                 continue
             
             costo_temp = g[actual] + costo
             
-            if vecino not in g or costo_temp < g[vecino]:
-                padre[vecino] = actual
-                g[vecino] = costo_temp
-                f[vecino] = g[vecino] + heuristica[vecino]
-                contador += 1
-                heapq.heappush(open_list, (f[vecino], contador, vecino))
+            # FILTRO DE REDUNDANCIA ESTRICTO: Si el vecino ya se descubrió
+            # con un costo menor O IGUAL, se ignora por completo.
+            if vecino in g and costo_temp >= g[vecino]:
+                continue
+                
+            padre[vecino] = actual
+            g[vecino] = costo_temp
+            f[vecino] = g[vecino] + heuristica[vecino]
+            contador += 1
+            heapq.heappush(open_list, (f[vecino], contador, vecino))
                 
     yield "FIN", None
