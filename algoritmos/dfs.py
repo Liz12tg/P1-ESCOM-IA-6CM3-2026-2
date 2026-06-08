@@ -1,5 +1,6 @@
 #exploración por profundidad
 
+#basicamente es lo mismo que bfs pero usando pila 
 def dfs(inicio, meta, obtener_vecinos):
     pila = [inicio] #estructura principal Pila LIFO
     visitados = {inicio}
@@ -13,7 +14,7 @@ def dfs(inicio, meta, obtener_vecinos):
                 actual = padres[actual]
             camino.append(inicio)
             return camino[::-1]
-        for vecino in reversed(obtener_vecinos(actual)):
+        for vecino in reversed(obtener_vecinos(actual)): #se usa este porque la pila invierte el orden 
             if vecino not in visitados:
                 visitados.add(vecino)
                 padres[vecino] = actual

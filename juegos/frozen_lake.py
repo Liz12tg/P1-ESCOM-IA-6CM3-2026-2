@@ -34,8 +34,8 @@ class FrozenLake:
 
     def __init__(self, nivel=1):
         self.mapa = MAPAS[nivel]
-        self.inicio = self.buscar("S")
-        self.meta = self.buscar("G")
+        self.inicio = self.buscar("S") #buscar incicio 
+        self.meta = self.buscar("G") #buscar meta 
         if self.inicio is None:
             raise ValueError("No se encontró el inicio 'S'")
         if self.meta is None:
@@ -43,7 +43,7 @@ class FrozenLake:
         self.filas = len(self.mapa)
         self.cols = len(self.mapa[0])
 
-    def buscar(self, valor):
+    def buscar(self, valor): #para la busqueda de las letras
         for i in range(len(self.mapa)):
             for j in range(len(self.mapa[i])):
                 if self.mapa[i][j] == valor:
@@ -51,19 +51,19 @@ class FrozenLake:
         return None
 
     def obtener_vecinos(self, estado):
-        fila, col = estado
+        fila, col = estado #se separan las coordenadas
         movimientos = [
-            (-1, 0),
-            (1, 0),
-            (0, -1),
-            (0, 1)
+            (-1, 0), #arriba
+            (1, 0), #abajo 
+            (0, -1), #izquierda 
+            (0, 1) #derecha
         ]
         vecinos = []
-        for df, dc in movimientos:
-            nf = fila + df
+        for df, dc in movimientos: #se recorren las 4 direcciones
+            nf = fila + df 
             nc = col + dc
-            if 0 <= nf < self.filas and 0 <= nc < self.cols:
-                if self.mapa[nf][nc] != "H":
+            if 0 <= nf < self.filas and 0 <= nc < self.cols: #verificamos los limites del mapa
+                if self.mapa[nf][nc] != "H": #si es un hoyo entonces no se puede entrar a la casulla 
                     vecinos.append((nf, nc))
         return vecinos
 

@@ -1,0 +1,12 @@
+No existe un algoritmo de búsqueda universalmente superior. 
+El rendimiento depende de la naturaleza del espacio de estados. 
+Los algoritmos no informados funcionan bien en problemas pequeños y estructurados, las búsquedas informadas aprovechan heurísticas para reducir exploración, las búsquedas locales son adecuadas para optimización en espacios enormes y los algoritmos adversarios permiten tomar decisiones óptimas en entornos competitivos.
+
+
+- Frozen Lake	BFS	Garantiza camino más corto
+- Sokoban	A*	Usa costo real + heurística
+- 8 Reinas	Recocido Simulado	Escapa de máximos locales
+- Tic-Tac-Toe	Alpha-Beta	Misma calidad que Minimax con menor costo
+
+¿Por qué BFS es mejor para Frozen Lake?
+Porque Frozen Lake es un problema de navegación donde todos los movimientos tienen el mismo costo. BFS explora por niveles y garantiza encontrar el camino más corto desde el estado inicial hasta la meta. DFS puede encontrar una solución más rápido en algunos casos, pero no garantiza que sea la óptima y puede recorrer rutas mucho más largas antes de llegar a la meta. Además, al ser una búsqueda no informada, ninguno de los dos algoritmos utiliza heurísticas; únicamente exploran el espacio de estados generado por obtener_vecinos().

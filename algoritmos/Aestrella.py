@@ -1,4 +1,4 @@
-import heapq
+import heapq #para la cola de prioridad
 
 # usa la funcion f(n)=g(n)+h(n)
 # aqui ya se tiene en cuenta el costo del recorrido y la distasncia estimada
@@ -9,13 +9,13 @@ import heapq
 def a_estrella(grafo, heuristica, inicio, meta_func):
     open_list = []
     contador = 0
-    g = {inicio: 0}
-    f = {inicio: heuristica[inicio]}
+    g = {inicio: 0} #costo acumulado
+    f = {inicio: heuristica[inicio]} #funcion de evaluacion
     heapq.heappush(open_list, (f[inicio], contador, inicio))
     padre = {inicio: None}
     closed = set()
     while open_list:
-        _, _, actual = heapq.heappop(open_list)
+        _, _, actual = heapq.heappop(open_list) #pafa obtener el menor f(n)
         if actual in closed:
             continue
         closed.add(actual)

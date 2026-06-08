@@ -329,6 +329,8 @@ function seleccionarJuego(juego) {
                         <select id="sokobanNivel" class="selectInput">
                             <option value="1">Nivel 1</option>
                             <option value="2">Nivel 2</option>
+                            <option value="3">Nivel 3</option>
+                            
                         </select>
                         <label>Algoritmo</label>
                         <select id="sokobanAlgoritmo" class="selectInput">
