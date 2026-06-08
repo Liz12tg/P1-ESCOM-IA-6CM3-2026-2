@@ -1,3 +1,7 @@
+#se usa busqueda adversaria
+# para este juego el mejor algoritmo es el de alpha-beta
+#porque tiene la misma calidad que minmax pero con menor costo
+
 def evaluar(tablero):
     lineas = [
         [0,1,2],[3,4,5],[6,7,8],

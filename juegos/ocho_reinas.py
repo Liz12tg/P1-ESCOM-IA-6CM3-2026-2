@@ -8,7 +8,7 @@ from algoritmos.hill_climbing import hill_climbing_estricto, recocido_simulado
 #se queda atrapado si este aun no es solucion
 
 #para este juego el mejor algoritmo es el de recocido simulado con enfriamento exponencial 
-
+#porque escapa de los maximos locales
 
 class OchoReinas:
     def __init__(self):

@@ -1,5 +1,11 @@
 from juegos.tic_tac_toe import terminal, evaluar, movimientos
 
+#es min max pero elimina las ramas que no sirven
+#donde alpha es el mejor valor para max
+#y beta el mejor valor para min
+# y si β≤α entonces hay poda 
+#tiene la misma respuesta que minmax pero tiene menos nodos
+
 def alpha_beta(tablero, alpha, beta, es_max):
     if terminal(tablero):
         return evaluar(tablero)

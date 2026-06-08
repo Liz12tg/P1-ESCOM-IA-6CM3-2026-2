@@ -1,5 +1,11 @@
 from juegos.tic_tac_toe import terminal, evaluar, movimientos
 
+# minimax supone que ambos jugadores juegan perfecto 
+#construye un arbol completo
+#max es la IA y min es el humano 
+#MAX escoge el mayor valor y min el menor
+#si existe victoria la encuentra y si existe empate lo garantiza
+
 def minimax(tablero, es_max):
     if terminal(tablero):
         return evaluar(tablero)
