@@ -10,11 +10,26 @@ def inicio():
     return render_template("index.html")
 
 @app.route("/bfs")
-def ejecutar_bfs():
-    juego = FrozenLake()
+def bfs_route():
+    nivel = int(
+        request.args.get("nivel", 1)
+    )
+    juego = FrozenLake(nivel)
     camino = juego.resolver_bfs()
-    camino_json = [[fila, col] for fila, col in camino]
-    return jsonify({"camino": camino_json})
+    return jsonify({
+        "camino": camino
+    })
+    
+@app.route("/dfs")
+def dfs_route():
+    nivel = int(
+        request.args.get("nivel", 1)
+    )
+    juego = FrozenLake(nivel)
+    camino = juego.resolver_dfs()
+    return jsonify({
+        "camino": camino
+    })
 
 @app.route("/reinas")
 def ejecutar_reinas():

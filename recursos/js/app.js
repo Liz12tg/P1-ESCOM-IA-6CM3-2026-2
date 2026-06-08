@@ -1,15 +1,9 @@
-// =========================================================================
-// ARCADE AI ENGINE — Controller principal (v2)
-// Carrusel centrado · paleta fresca · SFX 8-bit (WebAudio)
-// Endpoints intactos: /bfs /dfs /reinas /sokoban (SSE)
-// =========================================================================
 
-const mapa = [
-    ["S", "F", "F", "F"],
-    ["F", "H", "F", "H"],
-    ["F", "F", "F", "H"],
-    ["H", "F", "F", "G"]
-];
+const MAPA_INFO = {
+    1: { filas: 4, cols: 4 },
+    2: { filas: 5, cols: 5 },
+    3: { filas: 6, cols: 6 }
+};
 
 let evtSource = null;
 
@@ -62,8 +56,13 @@ const SFX = (() => {
 })();
 
 // Cualquier click "despierta" el AudioContext
-document.addEventListener('click', () => SFX.click && (window.__audioReady || (window.__audioReady = SFX.nav())), { once: true });
-
+//document.addEventListener('click', () => SFX.click && (window.__audioReady || (window.__audioReady = SFX.nav())), { once: true });
+document.addEventListener('click', () => {
+    if (!window.__audioReady) {
+        SFX.nav();
+        window.__audioReady = true;
+    }
+}, { once: true });
 // =========================================================================
 // SVG PIECES
 // =========================================================================
@@ -276,6 +275,12 @@ function seleccionarJuego(juego) {
                 <div>
                     <div class="panelTitle">Strategy</div>
                     <div class="controlsRow">
+                        <label>Nivel</label>
+                        <select id="selectFrozenNivel" class="selectInput">
+                            <option value="1">Nivel 1</option>
+                            <option value="2">Nivel 2</option>
+                            <option value="3">Nivel 3</option>
+                        </select>
                         <label>Algoritmo</label>
                         <select id="selectFrozenAlgo" class="selectInput">
                             <option value="bfs">BFS · Breadth First</option>
@@ -394,42 +399,72 @@ function volverASeleccion() {
 // =========================================================================
 // FROZEN LAKE
 // =========================================================================
-function dibujarMapaFrozen() {
+function dibujarMapaFrozen(nivel = 1) {
     const cont = document.getElementById('tableroFrozen');
-    if (!cont) return;
     cont.innerHTML = '';
-    for (let f = 0; f < 4; f++) for (let c = 0; c < 4; c++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cellFrozen');
-        const ch = mapa[f][c];
-        if (ch === 'S')      { cell.classList.add('cellStart'); cell.textContent = 'START'; }
-        else if (ch === 'G') { cell.classList.add('cellGoal');  cell.textContent = 'GOAL';  }
-        else if (ch === 'H') { cell.classList.add('cellHole'); }
-        else                 { cell.classList.add('cellIce'); }
-        cont.appendChild(cell);
+
+    const mapa = {
+        1: [
+            ["S","F","F","F"],
+            ["F","H","F","H"],
+            ["F","F","F","H"],
+            ["H","F","F","G"]
+        ],
+        2: [
+            ["S","F","F","F","F"],
+            ["H","H","F","H","F"],
+            ["F","F","F","F","F"],
+            ["F","H","H","H","F"],
+            ["F","F","F","F","G"]
+        ],
+        3: [
+            ["S","F","F","F","F","F"],
+            ["H","H","F","H","F","H"],
+            ["F","F","F","F","F","F"],
+            ["F","H","H","H","F","F"],
+            ["F","F","F","H","F","F"],
+            ["H","F","F","F","F","G"]
+        ]
+    }[nivel];
+
+    for (let f = 0; f < mapa.length; f++) {
+        for (let c = 0; c < mapa[0].length; c++) {
+            const cell = document.createElement('div');
+            cell.classList.add('cellFrozen');
+
+            const ch = mapa[f][c];
+            if (ch === 'S') cell.classList.add('cellStart');
+            else if (ch === 'G') cell.classList.add('cellGoal');
+            else if (ch === 'H') cell.classList.add('cellHole');
+            else cell.classList.add('cellIce');
+
+            cont.appendChild(cell);
+        }
     }
 }
 
 async function ejecutarFrozenSimulacion() {
     const metodo = document.getElementById('selectFrozenAlgo').value;
+    const nivel = document.getElementById('selectFrozenNivel').value;
+    const cols = MAPA_INFO[nivel].cols;
     const log = document.getElementById('colaLogs');
     const lbl = document.getElementById('frozenLblTipo');
-    dibujarMapaFrozen();
+    dibujarMapaFrozen(nivel);
     lbl.textContent = metodo.toUpperCase();
     log.innerHTML = `&gt; INIT ${metodo.toUpperCase()}<br>&gt; Scanning graph...<br>`;
     SFX.select();
 
     try {
-        const res = await fetch(`/${metodo}`);
+        const res = await fetch(`/${metodo}?nivel=${nivel}`);
         const datos = await res.json();
-        const camino = datos.camino;
+        const camino = datos.camino || [];
         const cells = document.querySelectorAll('#tableroFrozen .cellFrozen');
         const cnt = document.getElementById('pasosContador');
         let n = 0;
         for (const paso of camino) {
             n++;
             cnt.textContent = n;
-            const idx = paso[0] * 4 + paso[1];
+            const idx = paso[0] * cols + paso[1];
             if (cells[idx]) cells[idx].classList.add('cellPath');
             log.innerHTML += `&gt; Node [${paso[0]},${paso[1]}]<br>`;
             log.scrollTop = log.scrollHeight;
