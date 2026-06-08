@@ -1,5 +1,7 @@
+#exploración por profundidad
+
 def dfs(inicio, meta, obtener_vecinos):
-    pila = [inicio]
+    pila = [inicio] #estructura principal Pila LIFO
     visitados = {inicio}
     padres = {}
     while pila:
@@ -17,3 +19,7 @@ def dfs(inicio, meta, obtener_vecinos):
                 padres[vecino] = actual
                 pila.append(vecino)
     return []
+
+#a diferencia de bfs, no se explora completo siempre y no es del todo óptimo 
+#pero ocupa menos memoria que bfs
+#puede encontrar muy malos caminos

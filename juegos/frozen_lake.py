@@ -1,6 +1,9 @@
 from algoritmos.bfs import bfs
 from algoritmos.dfs import dfs
 
+#el mejor de los dos para este juego es BFS porque se busca la ruta más óptima 
+#y DFS puede acabar en un camino mas largo
+
 MAPAS = {
     1: [
         ["S","F","F","F"],
