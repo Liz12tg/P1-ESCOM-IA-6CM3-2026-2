@@ -3,6 +3,7 @@ from algoritmos.dfs import dfs
 
 #el mejor de los dos para este juego es BFS porque se busca la ruta más óptima 
 #y DFS puede acabar en un camino mas largo
+#como son busqueda no informada, no se usa heuristica
 
 MAPAS = {
     1: [

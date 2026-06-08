@@ -1,5 +1,10 @@
 import heapq
 
+#aqui solo se escoge h(n) sin considerar el costo del recorrido
+#funcion f(n)=h(n)
+#este algoritmo es muy rapido 
+#pero puede caer en malas decisiones
+
 def gbfs(grafo, heuristica, inicio, meta_func):
     open_list = []
     contador = 0

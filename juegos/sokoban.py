@@ -3,6 +3,16 @@ from collections import deque
 from algoritmos.Aestrella import a_estrella
 from algoritmos.GBFS import gbfs
 
+#Algortimos de busqueda informada
+#Aqui ya se usa heuristica 
+#es la funcion que estima que tan lejos se esta de la meta 
+#se usa distancia Manhattan
+#h(n)=∣x1​−x2​∣+∣y1​−y2​∣
+
+#el mejor algoritmo para este juego es A* porque sokobam tiene muchos estados engañosos y 
+#GBFS puede acercarse a una meta y generar bloqueos
+#mientras que A* considera el costo acumulado y evita muchas malas decisiones
+
 class Sokoban:
     def __init__(self, nivel=1):
         # MAPAS ORIGINALES TOTALMENTE INTACTOS

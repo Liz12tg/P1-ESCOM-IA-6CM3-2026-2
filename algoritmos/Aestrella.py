@@ -1,5 +1,11 @@
 import heapq
 
+# usa la funcion f(n)=g(n)+h(n)
+# aqui ya se tiene en cuenta el costo del recorrido y la distasncia estimada
+# hace el recorrido completo y es optimo dependiendo de la heuristica
+# pero ocupa mas tiempo y mas memoria 
+
+
 def a_estrella(grafo, heuristica, inicio, meta_func):
     open_list = []
     contador = 0
