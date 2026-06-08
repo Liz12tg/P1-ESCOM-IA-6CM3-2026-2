@@ -10,3 +10,7 @@ Los algoritmos no informados funcionan bien en problemas pequeños y estructurad
 
 ¿Por qué BFS es mejor para Frozen Lake?
 Porque Frozen Lake es un problema de navegación donde todos los movimientos tienen el mismo costo. BFS explora por niveles y garantiza encontrar el camino más corto desde el estado inicial hasta la meta. DFS puede encontrar una solución más rápido en algunos casos, pero no garantiza que sea la óptima y puede recorrer rutas mucho más largas antes de llegar a la meta. Además, al ser una búsqueda no informada, ninguno de los dos algoritmos utiliza heurísticas; únicamente exploran el espacio de estados generado por obtener_vecinos().
+
+
+¿Por qué Alpha-Beta es mejor que Minimax?
+Alpha-Beta produce exactamente la misma decisión que Minimax porque evalúa la misma función de utilidad. La diferencia es que elimina ramas que no pueden influir en la decisión final mediante la condición β ≤ α. Esto reduce significativamente el número de nodos explorados y el tiempo de ejecución, especialmente en árboles de búsqueda grandes. Por ello, Alpha-Beta es considerado una optimización de Minimax y es el algoritmo recomendado para el problema Tic-Tac-Toe de este proyecto.

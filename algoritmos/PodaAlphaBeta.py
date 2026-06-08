@@ -6,17 +6,23 @@ from juegos.tic_tac_toe import terminal, evaluar, movimientos
 # y si β≤α entonces hay poda 
 #tiene la misma respuesta que minmax pero tiene menos nodos
 
+
+#alpha-beta no cambia el resultado solo evita calculos innecesarios 
+#alpha representa la mejor opcion encontrada para max
+#beta respresenta la mejor opcion encontrada para min
+
 def alpha_beta(tablero, alpha, beta, es_max):
     if terminal(tablero):
         return evaluar(tablero)
     if es_max:
         valor = -999
-        for m in movimientos(tablero):
+        for m in movimientos(tablero): 
             tablero[m] = "X"
             valor = max(valor, alpha_beta(tablero, alpha, beta, False))
             tablero[m] = ""
             alpha = max(alpha, valor)
-            if beta <= alpha:
+            if beta <= alpha: #si esto se cumple se hace poda
+            #no importa que exista adelante, max ya tiene una opcion mejor y la rama se corta
                 break
         return valor
     else:
