@@ -1,4 +1,3 @@
-
 const MAPA_INFO = {
     1: { filas: 4, cols: 4 },
     2: { filas: 5, cols: 5 },
@@ -7,9 +6,6 @@ const MAPA_INFO = {
 
 let evtSource = null;
 
-// =========================================================================
-// SFX — sintetizador 8-bit con WebAudio (sin archivos externos)
-// =========================================================================
 const SFX = (() => {
     let ctx = null;
     let enabled = true;
@@ -20,7 +16,6 @@ const SFX = (() => {
         }
         if (ctx && ctx.state === 'suspended') ctx.resume();
     };
-    // Bip básico con envolvente
     const tone = (freq, dur = 0.08, type = 'square', vol = 0.15, slide = 0) => {
         if (!enabled) return;
         init();
@@ -55,17 +50,8 @@ const SFX = (() => {
     };
 })();
 
-// Cualquier click "despierta" el AudioContext
-//document.addEventListener('click', () => SFX.click && (window.__audioReady || (window.__audioReady = SFX.nav())), { once: true });
-document.addEventListener('click', () => {
-    if (!window.__audioReady) {
-        SFX.nav();
-        window.__audioReady = true;
-    }
-}, { once: true });
-// =========================================================================
-// SVG PIECES
-// =========================================================================
+document.addEventListener('click', () => SFX.click && (window.__audioReady || (window.__audioReady = SFX.nav())), { once: true });
+
 const SVG = {
     queen: `<svg class="queenSvg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -113,14 +99,10 @@ const SVG = {
     </svg>`
 };
 
-// =========================================================================
-// CARRUSEL  (CSS hace el centrado real; JS solo mueve por slot)
-// =========================================================================
-const GAMES = ['frozen_lake', 'ocho_reinas', 'sokoban'];
+const GAMES = ['frozen_lake', 'ocho_reinas', 'sokoban', 'tic_tac_toe'];
 let activeIndex = 0;
 
 function getSlotWidth() {
-    // ancho de cabinet + gap (debe coincidir con CSS .cabinet width + .carouselTrack gap)
     const cab = document.querySelector('.cabinet');
     if (!cab) return 420;
     const styles = getComputedStyle(cab);
@@ -134,10 +116,8 @@ function renderCarousel() {
     const track = document.getElementById('carouselTrack');
     const slot = getSlotWidth();
     track.style.transform = `translateX(${-activeIndex * slot}px)`;
-
     const cabinets = track.querySelectorAll('.cabinet');
     cabinets.forEach((c, i) => c.classList.toggle('active', i === activeIndex));
-
     const dots = document.querySelectorAll('#carouselDots .dot');
     dots.forEach((d, i) => d.classList.toggle('active', i === activeIndex));
 }
@@ -180,7 +160,6 @@ function initCarousel() {
         });
     });
 
-    // Swipe táctil
     let startX = 0;
     const track = document.getElementById('carouselTrack');
     track.addEventListener('touchstart', (e) => startX = e.touches[0].clientX);
@@ -189,19 +168,26 @@ function initCarousel() {
         if (Math.abs(dx) > 50) setActive(activeIndex + (dx < 0 ? 1 : -1));
     });
 
-    // Re-render al redimensionar (slot puede cambiar en breakpoints)
     window.addEventListener('resize', () => renderCarousel());
 
     drawPreviews();
-    // primer render tras layout
     requestAnimationFrame(() => renderCarousel());
 }
 
-// ── Mini previews en los cabinets ──
 function drawPreviews() {
     const f = document.getElementById('previewFrozen');
     const q = document.getElementById('previewReinas');
     const s = document.getElementById('previewSokoban');
+    const t = document.getElementById('previewTicTacToe');
+
+if (t) {
+    t.style.display = 'grid';
+    t.style.gridTemplateColumns = 'repeat(3,1fr)';
+    for(let i=0;i<9;i++){
+        const c = document.createElement('div');
+        c.className = 'screenCell';
+    }
+}
 
     for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
         const cell = document.createElement('div');
@@ -249,22 +235,15 @@ function drawPreviews() {
 
 document.addEventListener('DOMContentLoaded', initCarousel);
 
-// =========================================================================
-// SELECTOR PRINCIPAL DE JUEGO
-// =========================================================================
 function seleccionarJuego(juego) {
     const contenido = document.getElementById("contenido");
     const seleccion = document.getElementById("seleccionView");
     if (!contenido) return;
-
     if (evtSource) { evtSource.close(); evtSource = null; }
-
     seleccion.style.display = 'none';
-
-    const themeMap = { frozen_lake: 'ice', ocho_reinas: 'chess', sokoban: 'warehouse' };
-    const titleMap = { frozen_lake: 'FROZEN LAKE', ocho_reinas: '8 QUEENS', sokoban: 'SOKOBAN' };
+    const themeMap = { frozen_lake: 'ice', ocho_reinas: 'chess', sokoban: 'warehouse', tic_tac_toe: 'tic' };
+    const titleMap = { frozen_lake: 'FROZEN LAKE', ocho_reinas: '8 QUEENS', sokoban: 'SOKOBAN', tic_tac_toe: 'TIC TAC TOE' };
     const theme = themeMap[juego];
-
     let bodyHtml = '';
     if (juego === 'frozen_lake') {
         bodyHtml = `
@@ -371,6 +350,37 @@ function seleccionarJuego(juego) {
                     <div id="sokobanLogs" class="terminalConsole">&gt; SSE waiting...</div>
                 </div>
             </aside>`;
+    } else if (juego === 'tic_tac_toe') {
+        bodyHtml = `
+            <div class="gameScreenWrap">
+                <div class="gameScreen">
+                    <div id="tableroTicTacToe" class="boardTic"></div>
+                    <div id="ticResultado" class="ticResultado oculto">
+                        <div class="ticResultadoBox">
+                            <h2 id="ticResultadoTitulo"></h2>
+                            <button class="btnAction"
+                                    onclick="reiniciarTicTacToe()">
+                                JUGAR DE NUEVO
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <aside class="gamePanel">
+                <div>
+                    <div class="panelTitle">AI MODE</div>
+                    <label>Algoritmo</label>
+                    <select id="ticAlgoritmo" class="selectInput">
+                        <option value="minimax">Minimax</option>
+                        <option value="alphabeta" selected>Alpha-Beta</option>
+                    </select>
+                    <button class="btnAction"
+                            onclick="reiniciarTicTacToe()">
+                        REINICIAR
+                    </button>
+                </div>
+            </aside>
+        `;
     }
 
     contenido.innerHTML = `
@@ -386,6 +396,7 @@ function seleccionarJuego(juego) {
     if (juego === 'frozen_lake') dibujarMapaFrozen();
     if (juego === 'ocho_reinas') dibujarTableroReinasVacio();
     if (juego === 'sokoban')     inicializarContenedorSokobanVacio();
+    if (juego === 'tic_tac_toe') cargarTicTacToe();
 }
 
 function volverASeleccion() {
@@ -396,13 +407,11 @@ function volverASeleccion() {
     requestAnimationFrame(() => renderCarousel());
 }
 
-// =========================================================================
 // FROZEN LAKE
-// =========================================================================
 function dibujarMapaFrozen(nivel = 1) {
     const cont = document.getElementById('tableroFrozen');
     cont.innerHTML = '';
-
+    
     const mapa = {
         1: [
             ["S","F","F","F"],
@@ -426,6 +435,9 @@ function dibujarMapaFrozen(nivel = 1) {
             ["H","F","F","F","F","G"]
         ]
     }[nivel];
+    cont.style.display = "grid";
+    cont.style.gridTemplateColumns = `repeat(${mapa[0].length}, 60px)`;
+    cont.style.gridAutoRows = "60px";
 
     for (let f = 0; f < mapa.length; f++) {
         for (let c = 0; c < mapa[0].length; c++) {
@@ -479,9 +491,7 @@ async function ejecutarFrozenSimulacion() {
     }
 }
 
-// =========================================================================
 // 8 REINAS
-// =========================================================================
 function alternarEnfriamiento() {
     const el = document.getElementById('selectAlgoritmo').value;
     const w = document.getElementById('wrapperEnfriamiento');
@@ -551,9 +561,7 @@ async function ejecutarReinasSimulacion() {
     }
 }
 
-// =========================================================================
 // SOKOBAN
-// =========================================================================
 function inicializarContenedorSokobanVacio() {
     const cont = document.getElementById('tableroSokoban');
     if (cont) cont.innerHTML = '<div style="color:var(--text-dim); font-family:var(--f-screen); font-size:18px; padding:30px;">&gt; AWAITING DATA STREAM...</div>';
@@ -633,3 +641,70 @@ function ejecutarSokobanSimulacion() {
     };
     evtSource.onerror = () => { SFX.fail(); };
 }
+
+
+function dibujarTicTacToe(tablero) {
+    const cont = document.getElementById('tableroTicTacToe');
+    cont.innerHTML = '';
+    tablero.forEach((valor, i) => {
+        const celda = document.createElement('div');
+        celda.className = 'cellTic';
+        celda.innerHTML = valor;
+        celda.onclick = () => jugarTicTacToe(i);
+        cont.appendChild(celda);
+    });
+}
+
+async function actualizarAlgoritmoTicTacToe(){
+    const alg = document.getElementById("ticAlgoritmo").value;
+    await fetch(
+        `/tic_tac_toe/set_algoritmo/${alg}`
+    );
+}
+
+async function jugarTicTacToe(pos) {
+    await actualizarAlgoritmoTicTacToe();
+    const res = await fetch(`/tic_tac_toe/jugar/${pos}`);
+    const data = await res.json();
+    dibujarTicTacToe(data.tablero);
+    if (data.ganador === 1){
+        mostrarResultadoTic("LA IA GANA");
+        SFX.fail();
+    }
+    else if (data.ganador === -1){
+        mostrarResultadoTic("GANASTE");
+        SFX.win();
+    }
+    else if (!data.tablero.includes("")){
+        mostrarResultadoTic("EMPATE");
+    }
+}
+
+function actualizarTic(tablero) {
+    const cells = document.querySelectorAll("#tableroTicTacToe .cellTic");
+    cells.forEach((c, i) => {
+        c.textContent = tablero[i];
+    });
+}
+
+async function reiniciarTicTacToe() {
+    await fetch('/tic_tac_toe/reiniciar');
+    const modal = document.getElementById("ticResultado");
+    if(modal)
+        modal.classList.add("oculto");
+    cargarTicTacToe();
+}
+
+async function cargarTicTacToe() {
+    const res = await fetch('/tic_tac_toe/estado');
+    const data = await res.json();
+    dibujarTicTacToe(data.tablero);
+}
+
+function mostrarResultadoTic(texto){
+    const modal = document.getElementById("ticResultado");
+    const titulo = document.getElementById("ticResultadoTitulo");
+    titulo.textContent = texto;
+    modal.classList.remove("oculto");
+}
+

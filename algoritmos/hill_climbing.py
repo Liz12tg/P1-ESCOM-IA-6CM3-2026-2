@@ -1,7 +1,6 @@
 import random
 import math
 
-
 def hill_climbing_estricto(reinas_iniciales, funcion_puntaje):
     """
     Hill Climbing estricto (steepest ascent).
@@ -11,31 +10,24 @@ def hill_climbing_estricto(reinas_iniciales, funcion_puntaje):
     actual = list(reinas_iniciales)
     puntaje_actual = funcion_puntaje(actual)
     historial_pasos = [list(actual)]
-
     while True:
         mejor_vecino = None
         mejor_puntaje_vecino = puntaje_actual
-
         for i in range(8):
             for nueva_fila in range(8):
                 if nueva_fila != actual[i]:
                     vecino = list(actual)
                     vecino[i] = nueva_fila
                     puntaje_vecino = funcion_puntaje(vecino)
-
                     if puntaje_vecino > mejor_puntaje_vecino:
                         mejor_puntaje_vecino = puntaje_vecino
                         mejor_vecino = vecino
-
         if mejor_vecino is None:
             break
-
         actual = mejor_vecino
         puntaje_actual = mejor_puntaje_vecino
         historial_pasos.append(list(actual))
-
     return historial_pasos
-
 
 def recocido_simulado(
     reinas_iniciales,
@@ -48,10 +40,8 @@ def recocido_simulado(
 ):
     """
     Recocido Simulado para el problema de las N-reinas.
-
     Permite movimientos "cuesta abajo" con una probabilidad que decrece
     conforme la temperatura baja.
-
     Parámetros
     ----------
     reinas_iniciales      : estado inicial (lista de 8 enteros 0-7)
@@ -72,7 +62,6 @@ def recocido_simulado(
     actual = list(reinas_iniciales)
     puntaje_actual = funcion_puntaje(actual)
     historial_pasos = [list(actual)]
-
     T = T_inicial
     paso = 1
 
@@ -82,13 +71,10 @@ def recocido_simulado(
             nueva_fila = random.randint(0, 6)
             if nueva_fila >= actual[columna_elegida]:
                 nueva_fila += 1
-
             vecino = list(actual)
             vecino[columna_elegida] = nueva_fila
             puntaje_vecino = funcion_puntaje(vecino)
-
             delta_E = puntaje_vecino - puntaje_actual
-
             if delta_E > 0:
                 actual = vecino
                 puntaje_actual = puntaje_vecino
@@ -99,24 +85,18 @@ def recocido_simulado(
                     actual = vecino
                     puntaje_actual = puntaje_vecino
                     historial_pasos.append(list(actual))
-
             if puntaje_actual == 8:
                 return historial_pasos
         if tipo_enfriamiento == "exponencial":
             T = alfa * T
-
         elif tipo_enfriamiento == "lineal":
             T = max(T - alfa, T_min)
-
         elif tipo_enfriamiento == "logaritmico":
             T = T_inicial / math.log(1 + paso)
-
         else:
             raise ValueError(
                 f"tipo_enfriamiento '{tipo_enfriamiento}' no reconocido. "
                 "Usa 'exponencial', 'lineal' o 'logaritmico'."
             )
-
         paso += 1
-
     return historial_pasos

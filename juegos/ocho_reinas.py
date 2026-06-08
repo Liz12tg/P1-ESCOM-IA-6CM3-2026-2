@@ -4,21 +4,18 @@ from algoritmos.hill_climbing import hill_climbing_estricto, recocido_simulado
 class OchoReinas:
     def __init__(self):
         self.estado_inicial = [random.randint(0, 7) for _ in range(8)]
-
     @staticmethod
     def calcular_puntaje(reinas):
         """ Cuenta cuántas reinas están completamente seguras (sin conflictos) """
         conteo_filas = {}
         conteo_diag_principal = {}
         conteo_diag_secundaria = {}
-        
         for columna, fila in enumerate(reinas):
             diag_p = fila - columna
             diag_s = fila + columna
             conteo_filas[fila] = conteo_filas.get(fila, 0) + 1
             conteo_diag_principal[diag_p] = conteo_diag_principal.get(diag_p, 0) + 1
-            conteo_diag_secundaria[diag_s] = conteo_diag_secundaria.get(diag_s, 0) + 1
-            
+            conteo_diag_secundaria[diag_s] = conteo_diag_secundaria.get(diag_s, 0) + 1           
         reinas_seguras = 0
         for columna, fila in enumerate(reinas):
             if (conteo_filas[fila] == 1 and 

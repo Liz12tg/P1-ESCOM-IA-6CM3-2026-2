@@ -1,8 +1,3 @@
-/* ═══════════════════════════════════════════════════════
-   ARCADE CABINET — AI ENGINE  (v2 · fresh palette)
-   Tema arcade contemporáneo · CRT sutil · colores vivos
-   ═══════════════════════════════════════════════════════ */
-
 @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&family=Share+Tech+Mono&family=Outfit:wght@500;700&display=swap');
 
 :root {
@@ -38,7 +33,6 @@
     --theme-glow:   rgba(92,240,255,.45);
 }
 
-/* ── Paletas por tema (frescas, contrastadas) ── */
 [data-theme="ice"] {
     --theme-1: #6ed9ff;          /* cyan brillante */
     --theme-2: #2a78b8;
@@ -84,7 +78,6 @@ body {
     position: relative;
 }
 
-/* ── Scanlines globales SUTILES (era 3/5 → ahora 1.5/5) ── */
 body::before {
     content: "";
     position: fixed; inset: 0;
@@ -97,6 +90,7 @@ body::before {
     z-index: 999;
     mix-blend-mode: multiply;
 }
+
 body::after {
     content: "";
     position: fixed; inset: 0;
@@ -105,9 +99,6 @@ body::after {
     z-index: 998;
 }
 
-/* ═══════════════════════════════════════════════════════
-   HEADER · MARQUEE
-   ═══════════════════════════════════════════════════════ */
 .arcadeHeader {
     padding: 28px 48px 20px;
     display: flex;
@@ -132,6 +123,7 @@ body::after {
         2px 2px 0 rgba(0,0,0,.5);
     animation: neonFlicker 8s infinite;
 }
+
 @keyframes neonFlicker {
     0%, 95%, 100% { opacity: 1; }
     96%, 98%      { opacity: .88; }
@@ -156,6 +148,7 @@ body::after {
         inset 0 0 16px rgba(255,93,171,.18),
         0 2px 0 rgba(0,0,0,.4);
 }
+
 .creditLabel {
     font-family: var(--f-display);
     font-size: 8px;
@@ -163,6 +156,7 @@ body::after {
     letter-spacing: 0.15em;
     margin-bottom: 4px;
 }
+
 .creditValue {
     font-family: var(--f-display);
     font-size: 20px;
@@ -170,9 +164,6 @@ body::after {
     text-shadow: 0 0 10px var(--neon-pink);
 }
 
-/* ═══════════════════════════════════════════════════════
-   CARRUSEL  (centrado real)
-   ═══════════════════════════════════════════════════════ */
 .seleccionView {
     padding: 50px 20px 40px;
     position: relative;
@@ -192,8 +183,6 @@ body::after {
     position: relative;
 }
 
-/* Truco de centrado: padding-left:50% empuja la primera tarjeta al centro,
-   y translateX(-50%) en cada cabinet centra cada uno respecto a su origen. */
 .carouselTrack {
     display: flex;
     align-items: center;
@@ -226,7 +215,6 @@ body::after {
 .carouselNav:hover { color: var(--neon-yellow); }
 .carouselNav:active { transform: translateY(calc(-50% + 3px)); box-shadow: inset 0 2px 0 rgba(255,255,255,.1), 0 2px 0 var(--metal-dark); }
 
-/* ── Cabinet ── */
 .cabinet {
     width: 360px;
     flex-shrink: 0;
@@ -247,6 +235,7 @@ body::after {
     transition: all .55s cubic-bezier(.65,.05,.25,1);
     cursor: pointer;
 }
+
 .cabinet.active {
     transform: translateX(-50%) scale(1);
     opacity: 1;
@@ -267,6 +256,7 @@ body::after {
     border-bottom: 1px solid rgba(255,255,255,.06);
     text-align: center;
 }
+
 .cabinetMarqueeLabel {
     font-family: var(--f-mono);
     font-size: 10px;
@@ -275,6 +265,7 @@ body::after {
     display: block;
     margin-bottom: 6px;
 }
+
 .cabinetMarquee h2 {
     font-family: var(--f-display);
     font-size: 18px;
@@ -283,7 +274,6 @@ body::after {
     text-shadow: 0 0 8px var(--theme-glow), 2px 2px 0 rgba(0,0,0,.5);
 }
 
-/* ── Pantalla CRT del cabinet (sutil) ── */
 .cabinetScreen {
     margin: 18px;
     aspect-ratio: 4/3;
@@ -298,6 +288,7 @@ body::after {
         0 0 0 2px var(--metal-light),
         0 0 22px var(--theme-glow);
 }
+
 .screenGrid {
     position: absolute; inset: 16px;
     display: grid;
@@ -305,6 +296,7 @@ body::after {
     grid-template-rows: repeat(4, 1fr);
     gap: 3px;
 }
+
 .screenGridChess { grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr); gap: 0; }
 .screenGridSk    { grid-template-columns: repeat(5, 1fr); grid-template-rows: repeat(4, 1fr); gap: 2px; }
 .screenCell { border-radius: 2px; display: flex; align-items: center; justify-content: center; }
@@ -314,25 +306,27 @@ body::after {
     background: repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 1px, transparent 1px 4px);
     pointer-events: none;
 }
+
 .screenVignette {
     position: absolute; inset: 0;
     background: radial-gradient(ellipse at center, transparent 65%, rgba(0,0,0,.5) 100%);
     pointer-events: none;
 }
 
-/* ── Controles ── */
 .cabinetControls {
     padding: 16px 20px 22px;
     display: flex; flex-direction: column; gap: 14px;
     background: linear-gradient(180deg, transparent, rgba(0,0,0,.35));
     border-top: 1px solid rgba(255,255,255,.06);
 }
+
 .cabinetMeta {
     display: flex; justify-content: space-between;
     font-family: var(--f-mono);
     font-size: 10px;
     letter-spacing: 0.2em;
 }
+
 .cabinetAlgo  { color: var(--theme-1); text-shadow: 0 0 6px var(--theme-glow); }
 .cabinetGenre { color: var(--text-dim); }
 
@@ -355,6 +349,7 @@ body::after {
     text-shadow: 0 1px 0 rgba(255,255,255,.3);
     animation: pressPulse 2.4s infinite;
 }
+
 .cabinet:not(.active) .pressStartBtn { animation: none; opacity: .55; cursor: not-allowed; pointer-events: none; }
 .pressStartBtn:hover  { filter: brightness(1.1); }
 .pressStartBtn:active { transform: translateY(4px); box-shadow: inset 0 2px 0 rgba(255,255,255,.4), 0 1px 0 rgba(0,0,0,.5); }
@@ -364,7 +359,6 @@ body::after {
     50%      { box-shadow: inset 0 2px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(0,0,0,.25), 0 5px 0 rgba(0,0,0,.5), 0 0 40px var(--theme-glow); }
 }
 
-/* ── Dots ── */
 .carouselDots {
     position: absolute;
     bottom: 18px;
@@ -372,6 +366,7 @@ body::after {
     display: flex; justify-content: center; gap: 14px;
     z-index: 5;
 }
+
 .dot {
     width: 12px; height: 12px;
     border-radius: 50%;
@@ -380,15 +375,13 @@ body::after {
     cursor: pointer;
     transition: all .2s;
 }
+
 .dot.active {
     background: var(--neon-yellow);
     box-shadow: 0 0 12px var(--neon-yellow);
     transform: scale(1.2);
 }
 
-/* ═══════════════════════════════════════════════════════
-   GAME VIEW
-   ═══════════════════════════════════════════════════════ */
 .gameView { padding: 0 40px; position: relative; z-index: 1; }
 
 .gameCabinet {
@@ -406,6 +399,7 @@ body::after {
         0 0 70px var(--theme-glow);
     animation: bootOn .6s ease-out;
 }
+
 @keyframes bootOn {
     0%   { transform: scaleY(.02); opacity: 0; filter: brightness(2.5); }
     40%  { transform: scaleY(1);   opacity: 1; filter: brightness(1.8); }
@@ -418,6 +412,7 @@ body::after {
     background: linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,.15));
     border-bottom: 1px solid rgba(255,255,255,.06);
 }
+
 .backBtn {
     font-family: var(--f-display);
     font-size: 9px;
@@ -431,6 +426,7 @@ body::after {
     box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 3px 0 var(--metal-dark);
     transition: transform .1s, box-shadow .1s;
 }
+
 .backBtn:active { transform: translateY(2px); box-shadow: inset 0 1px 0 rgba(255,255,255,.1), 0 1px 0 var(--metal-dark); }
 
 .gameTitle {
@@ -441,7 +437,6 @@ body::after {
     text-shadow: 0 0 8px var(--theme-glow), 0 0 20px var(--theme-glow);
 }
 
-/* IMPORTANTE: grid del cuerpo del juego con altura controlada */
 .gameBody {
     display: grid;
     grid-template-columns: minmax(420px, 1fr) 380px;
@@ -472,6 +467,7 @@ body::after {
         0 0 30px var(--theme-glow);
     display: flex; align-items: center; justify-content: center;
 }
+
 .gameScreen::before {
     content: "";
     position: absolute; inset: 0;
@@ -479,6 +475,7 @@ body::after {
     background: repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 1px, transparent 1px 4px);
     pointer-events: none;
 }
+
 .gameScreen::after {
     content: "";
     position: absolute; inset: 0;
@@ -487,7 +484,6 @@ body::after {
     pointer-events: none;
 }
 
-/* Panel lateral con scroll interno si crece */
 .gamePanel {
     background: linear-gradient(180deg, rgba(0,0,0,.3), rgba(0,0,0,.5));
     border-left: 1px solid rgba(255,255,255,.06);
@@ -516,6 +512,7 @@ body::after {
     border-radius: 8px;
     padding: 14px;
 }
+
 .controlsRow label {
     font-family: var(--f-mono);
     font-size: 10px;
@@ -535,6 +532,7 @@ body::after {
     outline: none;
     cursor: pointer;
 }
+
 .selectInput:focus { border-color: var(--theme-1); box-shadow: 0 0 12px var(--theme-glow); }
 
 .btnAction {
@@ -556,16 +554,19 @@ body::after {
     transition: transform .08s, filter .08s;
     text-shadow: 0 1px 0 rgba(255,255,255,.25);
 }
+
 .btnAction:hover  { filter: brightness(1.12); }
 .btnAction:active { transform: translateY(3px); box-shadow: inset 0 2px 0 rgba(255,255,255,.4), 0 1px 0 rgba(0,0,0,.5); }
 
 .metricsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
 .metricCard {
     background: rgba(0,0,0,.5);
     border: 1px solid rgba(255,255,255,.06);
     border-radius: 8px;
     padding: 12px;
 }
+
 .metricCard .label {
     font-family: var(--f-mono);
     font-size: 9px;
@@ -575,6 +576,7 @@ body::after {
     text-transform: uppercase;
     margin-bottom: 6px;
 }
+
 .metricCard .value {
     font-family: var(--f-display);
     font-size: 16px;
@@ -584,12 +586,12 @@ body::after {
     line-height: 1.1;
 }
 
-/* ── Terminal: altura FIJA, contenido scroll. No crece. ── */
 .terminalWrap {
     display: flex; flex-direction: column;
     min-height: 0;
     flex-shrink: 0;
 }
+
 .terminalConsole {
     background: rgba(0,0,0,.7);
     border: 1px solid rgba(255,255,255,.06);
@@ -606,13 +608,11 @@ body::after {
     text-shadow: 0 0 4px var(--theme-glow);
     word-break: break-word;
 }
+
 .terminalConsole::-webkit-scrollbar { width: 8px; }
 .terminalConsole::-webkit-scrollbar-track { background: rgba(0,0,0,.3); }
 .terminalConsole::-webkit-scrollbar-thumb { background: var(--metal-light); border-radius: 4px; }
 
-/* ═══════════════════════════════════════════════════════
-   TABLEROS — Frozen Lake (azul vivo / nieve)
-   ═══════════════════════════════════════════════════════ */
 .boardFrozen {
     display: grid;
     grid-template-columns: repeat(4, 70px);
@@ -625,6 +625,7 @@ body::after {
     border: 1px solid rgba(110,217,255,.3);
     box-shadow: inset 0 0 24px rgba(0,0,0,.4);
 }
+
 .cellFrozen {
     width: 70px; height: 70px;
     border-radius: 6px;
@@ -635,11 +636,13 @@ body::after {
     letter-spacing: 0.05em;
     transition: all .25s;
 }
+
 .cellIce {
     background: linear-gradient(135deg, #d9f0fa 0%, #a8dcec 60%, #7cc5dc 100%);
     box-shadow: inset 0 2px 0 rgba(255,255,255,.7), inset 0 -2px 0 rgba(0,0,0,.1);
     color: #1a4d6e;
 }
+
 .cellIce::before {
     content: "";
     position: absolute; inset: 4px;
@@ -649,41 +652,45 @@ body::after {
     border-radius: 4px;
     pointer-events: none;
 }
+
 .cellStart {
     background: linear-gradient(135deg, #8dffc4, #2db86e);
     color: #002a14;
     box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 18px rgba(93,255,176,.55);
     text-shadow: 0 1px 0 rgba(255,255,255,.4);
 }
+
 .cellGoal {
     background: linear-gradient(135deg, #ffe57a, #ffa83d);
     color: #2a1800;
     box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 22px rgba(255,210,63,.6);
     animation: goalPulse 1.4s infinite;
 }
+
 @keyframes goalPulse { 50% { box-shadow: inset 0 2px 0 rgba(255,255,255,.5), 0 0 34px rgba(255,210,63,.95); } }
+
 .cellHole {
     background: radial-gradient(circle at 40% 35%, #1a2540 0%, #050a18 75%);
     color: var(--neon-red);
     box-shadow: inset 0 0 22px rgba(255,93,108,.45), 0 0 14px rgba(255,93,108,.35);
 }
+
 .cellHole::before {
     content: "";
     position: absolute; inset: 8px;
     border-radius: 50%;
     background: radial-gradient(circle, #000 35%, transparent 75%);
 }
+
 .cellPath {
     background: linear-gradient(135deg, #5cf0ff, #2098b8) !important;
     box-shadow: inset 0 2px 0 rgba(255,255,255,.6), 0 0 22px rgba(92,240,255,.8) !important;
     color: #001a24 !important;
     animation: cellPop .35s;
 }
+
 @keyframes cellPop { 0% { transform: scale(.6); } 60% { transform: scale(1.12); } 100% { transform: scale(1); } }
 
-/* ═══════════════════════════════════════════════════════
-   TABLERO — 8 Reinas (moderno, marfil + teal)
-   ═══════════════════════════════════════════════════════ */
 .boardChess {
     display: grid;
     grid-template-columns: repeat(8, 42px);
@@ -694,32 +701,35 @@ body::after {
     border: 1px solid rgba(255,200,87,.3);
     box-shadow: inset 0 0 28px rgba(0,0,0,.45), 0 0 22px rgba(255,200,87,.18);
 }
+
 .cellChess {
     display: flex; align-items: center; justify-content: center;
     position: relative;
     transition: background .3s, box-shadow .3s;
 }
+
 .cellChessLight {
     background: linear-gradient(135deg, #fff3d4 0%, #e8d5a8 100%);
     box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
 }
+
 .cellChessDark {
     background: linear-gradient(135deg, #2a6e8a 0%, #1a4d6a 100%);
     box-shadow: inset 0 -1px 0 rgba(0,0,0,.25);
 }
+
 .cellQueenSafe {
     box-shadow: inset 0 0 0 3px var(--theme-goal), inset 0 0 16px rgba(93,255,176,.45) !important;
 }
+
 .cellQueenConflict {
     box-shadow: inset 0 0 0 3px var(--theme-danger), inset 0 0 16px rgba(255,93,108,.5) !important;
     animation: conflictBlink .8s infinite;
 }
+
 @keyframes conflictBlink { 50% { box-shadow: inset 0 0 0 3px var(--theme-danger), inset 0 0 26px rgba(255,93,108,.85) !important; } }
 .queenSvg { width: 30px; height: 30px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
 
-/* ═══════════════════════════════════════════════════════
-   TABLERO — Sokoban (CONTRASTE ALTO: piso claro, caja vivida)
-   ═══════════════════════════════════════════════════════ */
 .boardSokoban {
     display: grid;
     padding: 16px;
@@ -729,9 +739,9 @@ body::after {
     box-shadow: inset 0 0 30px rgba(0,0,0,.45), 0 0 22px rgba(255,160,92,.15);
     gap: 3px;
 }
+
 .cellSk { width: 44px; height: 44px; position: relative; display: flex; align-items: center; justify-content: center; }
 
-/* Piso: tono claro/cálido, tabla de madera clara */
 .cellSkFloor {
     background:
         repeating-linear-gradient(0deg, rgba(140,90,50,.10) 0 6px, transparent 6px 12px),
@@ -740,7 +750,6 @@ body::after {
     border-radius: 4px;
 }
 
-/* Muros: oscuros, ladrillo, MUY distinto del piso */
 .cellSkWall {
     background:
         repeating-linear-gradient(90deg, transparent 0 14px, rgba(0,0,0,.35) 14px 16px),
@@ -753,7 +762,6 @@ body::after {
     border-radius: 4px;
 }
 
-/* Objetivo: círculo neón sobre el piso */
 .cellSkTarget {
     background:
         repeating-linear-gradient(0deg, rgba(140,90,50,.10) 0 6px, transparent 6px 12px),
@@ -761,6 +769,7 @@ body::after {
     box-shadow: inset 0 0 0 1px rgba(80,50,20,.18);
     border-radius: 4px;
 }
+
 .cellSkTarget::before {
     content: "";
     position: absolute; inset: 8px;
@@ -769,14 +778,12 @@ body::after {
     box-shadow: 0 0 12px var(--theme-goal), inset 0 0 8px rgba(93,255,176,.4);
     animation: targetSpin 4s linear infinite;
 }
+
 @keyframes targetSpin { to { transform: rotate(360deg); } }
 
 .boxSvg, .workerSvg { width: 36px; height: 36px; filter: drop-shadow(0 3px 3px rgba(0,0,0,.55)); }
 .cellSkBoxOnTarget .boxSvg { filter: drop-shadow(0 0 12px var(--theme-goal)) drop-shadow(0 2px 2px rgba(0,0,0,.4)); }
 
-/* ═══════════════════════════════════════════════════════
-   FOOTER
-   ═══════════════════════════════════════════════════════ */
 .arcadeFooter {
     margin-top: 40px;
     padding: 16px 48px;
@@ -788,23 +795,24 @@ body::after {
     color: var(--text-dim);
     background: rgba(0,0,0,.25);
 }
+
 .footerStatus { display: flex; align-items: center; gap: 8px; color: var(--neon-green); text-shadow: 0 0 4px var(--neon-green); }
+
 .statusDot {
     width: 8px; height: 8px; border-radius: 50%;
     background: var(--neon-green);
     box-shadow: 0 0 10px var(--neon-green);
     animation: blinkDot 1.4s infinite;
 }
+
 @keyframes blinkDot { 50% { opacity: .3; } }
 
-/* ═══════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════ */
 @media (max-width: 1024px) {
     .gameBody { grid-template-columns: 1fr; max-height: none; }
     .gamePanel { border-left: none; border-top: 1px solid rgba(255,255,255,.06); }
     .cabinet { width: 320px; }
 }
+
 @media (max-width: 640px) {
     .arcadeHeader { padding: 18px 20px; }
     .marqueeTitle { font-size: 14px; }
@@ -813,4 +821,113 @@ body::after {
     .carouselNav { width: 44px; height: 44px; }
     .carouselNav.prev { left: 6px; }
     .carouselNav.next { right: 6px; }
+}
+
+.boardTic {
+    display:grid;
+    grid-template-columns:repeat(3,100px);
+    grid-template-rows:repeat(3,100px);
+    gap:8px;
+}
+
+.cellTic {
+    width:100px;
+    height:100px;
+    background:#111;
+    border:2px solid #5cf0ff;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:50px;
+    font-weight:bold;
+    cursor:pointer;
+    color:#5cf0ff;
+    transition:.2s;
+}
+
+.cellTic:hover {
+    background:#1f1f1f;
+    box-shadow:0 0 15px #5cf0ff;
+}
+
+.ticResultado{
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,.75);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+}
+
+.oculto{
+    display:none;
+}
+
+.ticResultadoBox{
+    border:3px solid #5cf0ff;
+    padding:30px;
+    background:#081018;
+    text-align:center;
+    box-shadow:0 0 25px #5cf0ff;
+}
+
+.ticResultadoBox h2{
+    color:#5cf0ff;
+    font-size:2rem;
+    margin-bottom:20px;
+}
+
+.ticEstado{
+    margin:15px 0;
+    padding:12px;
+    text-align:center;
+    border:2px solid #5cf0ff;
+    color:#5cf0ff;
+    font-family:var(--f-screen);
+    font-size:18px;
+    box-shadow:0 0 10px rgba(92,240,255,.5);
+}
+
+.ticMensaje{
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    transform:translate(-50%,-50%);
+
+    padding:20px 40px;
+
+    background:rgba(0,0,0,.9);
+
+    border:3px solid #5cf0ff;
+
+    color:#5cf0ff;
+
+    font-size:38px;
+
+    font-family:var(--f-screen);
+
+    text-shadow:
+        0 0 10px #5cf0ff,
+        0 0 20px #5cf0ff;
+
+    box-shadow:
+        0 0 20px #5cf0ff,
+        inset 0 0 15px rgba(92,240,255,.3);
+
+    z-index:999;
+
+    animation: parpadeoArcade .8s infinite;
+}
+
+.oculto{
+    display:none;
+}
+
+@keyframes parpadeoArcade{
+    50%{
+        opacity:.5;
+    }
 }

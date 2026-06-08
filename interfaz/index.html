@@ -7,7 +7,7 @@
 </head>
 <body>
 
-    <!-- ════════ MARQUEE / HEADER ════════ -->
+    <!-- header -->
     <header class="arcadeHeader">
         <div class="marqueeWrap">
             <h1 class="marqueeTitle" data-text="ARCADE · AI ENGINE">ARCADE · AI ENGINE</h1>
@@ -19,7 +19,7 @@
         </div>
     </header>
 
-    <!-- ════════ CARRUSEL DE GABINETES ════════ -->
+    <!--CARRUSEL-->
     <section id="seleccionView" class="seleccionView">
         <div class="carousel">
             <button class="carouselNav prev" id="navPrev" aria-label="anterior">
@@ -87,25 +87,41 @@
                             <button class="pressStartBtn" data-game="sokoban">PRESS&nbsp;START</button>
                         </div>
                     </article>
+                    <!-- TIC TAC TOE -->
+                    <article class="cabinet" data-game="tic_tac_toe" data-theme="tic">
+                        <div class="cabinetMarquee">
+                            <span class="cabinetMarqueeLabel">MÓDULO 04</span>
+                            <h2>TIC TAC TOE</h2>
+                        </div>
+                        <div class="cabinetScreen">
+                            <div id="previewTicTacToe" class="screenGridTic"></div>
+                            <div class="screenScanlines"></div>
+                            <div class="screenVignette"></div>
+                        </div>
+                        <div class="cabinetControls">
+                            <div class="cabinetMeta">
+                                <span class="cabinetAlgo">MINIMAX · αβ</span>
+                                <span class="cabinetGenre">GAME TREE</span>
+                            </div>
+                            <button class="pressStartBtn"
+                                    data-game="tic_tac_toe">
+                                PRESS START
+                            </button>
+                        </div>
+                    </article>
                 </div>
             </div>
-
             <button class="carouselNav next" id="navNext" aria-label="siguiente">
                 <svg viewBox="0 0 24 24" width="22" height="22"><path d="M9 4 L17 12 L9 20" stroke="currentColor" stroke-width="3" fill="none" stroke-linecap="square"/></svg>
             </button>
-
             <div class="carouselDots" id="carouselDots"></div>
         </div>
     </section>
-
-    <!-- ════════ VIEW DEL JUEGO SELECCIONADO ════════ -->
     <section id="contenido" class="gameView"></section>
-
     <footer class="arcadeFooter">
         <span>© 2026 · PRÁCTICA 1 — GENERAL SEARCH ENGINE</span>
         <span class="footerStatus"><span class="statusDot"></span> SYSTEM ONLINE</span>
     </footer>
-
     <script src="{{ url_for('static', filename='js/app.js') }}"></script>
 </body>
 </html>
