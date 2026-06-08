@@ -1,6 +1,15 @@
 import random
 from algoritmos.hill_climbing import hill_climbing_estricto, recocido_simulado
 
+#se hace uso de busqueda local
+#analiza todos los vecinos y escoge el mejor 
+#como ventaja es rapido 
+#pero el problema son los maximos locales ya que si ningun vecino mejora
+#se queda atrapado si este aun no es solucion
+
+#para este juego el mejor algoritmo es el de recocido simulado con enfriamento exponencial 
+
+
 class OchoReinas:
     def __init__(self):
         self.estado_inicial = [random.randint(0, 7) for _ in range(8)]

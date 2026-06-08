@@ -1,6 +1,18 @@
 import random
 import math
 
+#aqui esta tanto hill climbing
+# como recocido simulado
+#recocido esta basado en metalurgia
+#permite movimientos peores temporalmente y usa propabilidad
+#P=eΔE/T
+#cuando la temperatura es alta acepta muchos errores
+#y si es baja se vuelve mas estricto 
+#se usan 3 enfriamentos 
+#Exponencial Tk+1​=αTk​ Más usado.
+# Lineal Tk+1​=Tk​−α que es mas agresivo
+# Logaritimico Tk​=T0/log(1+k)​​ que es muy lento y tiene mayor probabilidad de encontrar optimos 
+
 def hill_climbing_estricto(reinas_iniciales, funcion_puntaje):
     """
     Hill Climbing estricto (steepest ascent).
