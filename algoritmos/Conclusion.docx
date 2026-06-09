@@ -14,3 +14,13 @@ Porque Frozen Lake es un problema de navegación donde todos los movimientos tie
 
 ¿Por qué Alpha-Beta es mejor que Minimax?
 Alpha-Beta produce exactamente la misma decisión que Minimax porque evalúa la misma función de utilidad. La diferencia es que elimina ramas que no pueden influir en la decisión final mediante la condición β ≤ α. Esto reduce significativamente el número de nodos explorados y el tiempo de ejecución, especialmente en árboles de búsqueda grandes. Por ello, Alpha-Beta es considerado una optimización de Minimax y es el algoritmo recomendado para el problema Tic-Tac-Toe de este proyecto.
+
+
+
+
+preguntas
+- si hay dos cajas y dos metas, porque asignar la caja a la meta mas cercana puede fallar.
+Al cambiar el orden de las cajas, el mismo estado físico del mapa podría devolver valores de heurística distintos ($20$ o $28$). Esto significa que tu heurística no es consistente y puede dejar de ser admisible (podría sobreestimar el costo real), destruyendo la garantía de optimalidad de A* y provocando que el algoritmo explore miles de nodos innecesarios o tome rutas pésimas.
+
+
+checar el algoritmo de tic tac toe

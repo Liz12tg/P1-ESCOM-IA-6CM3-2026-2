@@ -9,34 +9,39 @@ from juegos.tic_tac_toe import terminal, evaluar, movimientos
 
 #asume que ambos jugadores juegan perfecto
 
-def minimax(tablero, es_max): #tablero es el estado actual y es_max quien juega 
+def minimax(tablero, es_max, profundidad=0): #tablero es el estado actual y es_max quien juega 
     #si es true la IA y si es false el humano
     if terminal(tablero): #si el juego acabó devuelve el resultado
-        return evaluar(tablero)
+        resultado = evaluar(tablero)
+        if resultado == 1:
+            return 10 - profundidad 
+        elif resultado == -1:
+            return profundidad -10
+        return 0
     if es_max: #si es la IA
-        mejor = -999 #porque mas quiere el valo rmas grnade
+        mejor = float('-inf') #porque mas quiere el valo rmas grnade
         for m in movimientos(tablero): #recorre  todas las posibles jugadas 
             tablero[m] = "X"
-            valor = minimax(tablero, False) #ahora juega el rival 
+            valor = minimax(tablero, False, profundidad+1) #ahora juega el rival 
             tablero[m] = "" #deshace el mov
             mejor = max(mejor, valor) #y escoge el mejor resultado
         return mejor
     else: #nodo min, es decir el humano
-        mejor = 999
+        mejor = float('inf')
         for m in movimientos(tablero): #simula
             tablero[m] = "O"
-            valor = minimax(tablero, True)
+            valor = minimax(tablero, True, profundidad+1)
             tablero[m] = ""
             mejor = min(mejor, valor)
         return mejor
 
 def mejor_movimiento(tablero): #para encontra la jugada real
     #se prueba cada movimiento 
-    mejor_valor = -999 
+    mejor_valor = float('-inf')
     mejor_mov = None
     for m in movimientos(tablero):
         tablero[m] = "X" #simula
-        valor = minimax(tablero, False) #evalua 
+        valor = minimax(tablero, False, 1) #evalua 
         tablero[m] = ""
         if valor > mejor_valor: #si es mejor actualiza
             mejor_valor = valor 

@@ -11,14 +11,20 @@ from juegos.tic_tac_toe import terminal, evaluar, movimientos
 #alpha representa la mejor opcion encontrada para max
 #beta respresenta la mejor opcion encontrada para min
 
-def alpha_beta(tablero, alpha, beta, es_max):
+def alpha_beta(tablero, alpha, beta, es_max, profundidad=0):
     if terminal(tablero):
-        return evaluar(tablero)
+        resultado = evaluar(tablero)
+        if resultado == 1:
+            return 10 - profundidad
+        elif resultado == -1:
+            return profundidad -10
+        return 0
+    
     if es_max:
-        valor = -999
+        valor = float('-inf')
         for m in movimientos(tablero): 
             tablero[m] = "X"
-            valor = max(valor, alpha_beta(tablero, alpha, beta, False))
+            valor = max(valor, alpha_beta(tablero, alpha, beta, False, profundidad+1))
             tablero[m] = ""
             alpha = max(alpha, valor)
             if beta <= alpha: #si esto se cumple se hace poda
@@ -26,10 +32,10 @@ def alpha_beta(tablero, alpha, beta, es_max):
                 break
         return valor
     else:
-        valor = 999
+        valor = float('inf')
         for m in movimientos(tablero):
             tablero[m] = "O"
-            valor = min(valor, alpha_beta(tablero, alpha, beta, True))
+            valor = min(valor, alpha_beta(tablero, alpha, beta, True, profundidad+1))
             tablero[m] = ""
             beta = min(beta, valor)
             if beta <= alpha:
@@ -37,11 +43,11 @@ def alpha_beta(tablero, alpha, beta, es_max):
         return valor
 
 def mejor_movimiento_alpha_beta(tablero):
-    mejor_valor = -999
+    mejor_valor = float('-inf')
     mejor_mov = None
     for m in movimientos(tablero):
         tablero[m] = "X"
-        valor = alpha_beta(tablero, -999, 999, False)
+        valor = alpha_beta(tablero,float('-inf'), float('inf'), False,1)
         tablero[m] = ""
         if valor > mejor_valor:
             mejor_valor = valor
