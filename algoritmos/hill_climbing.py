@@ -45,31 +45,12 @@ def recocido_simulado(
     reinas_iniciales,
     funcion_puntaje,
     tipo_enfriamiento="exponencial",
-    T_inicial=2.0,
-    T_min=0.01,
-    alfa=0.5,
-    iteraciones_por_paso=100,
+    T_inicial=100.0,
+    T_min=0.001,
+    alfa=0.99,
 ):
     """
     Recocido Simulado para el problema de las N-reinas.
-    Permite movimientos "cuesta abajo" con una probabilidad que decrece
-    conforme la temperatura baja.
-    Parámetros
-    ----------
-    reinas_iniciales      : estado inicial (lista de 8 enteros 0-7)
-    funcion_puntaje       : función que evalúa un estado (mayor = mejor)
-    tipo_enfriamiento     : "exponencial" | "lineal" | "logaritmico"
-    T_inicial             : temperatura de inicio
-    T_min                 : temperatura mínima para detener
-    alfa                  : factor de enfriamiento
-                            · exponencial: T_{k+1} = alfa * T_k          (0 < alfa < 1)
-                            · lineal     : T_{k+1} = T_k - alfa           (alfa > 0)
-                            · logaritmico: T_k = T_0 / log(1 + k)
-    iteraciones_por_paso  : intentos de movimiento por nivel de temperatura
-
-    Retorna
-    -------
-    historial_pasos : lista de estados visitados (incluye estado inicial)
     """
     actual = list(reinas_iniciales)
     puntaje_actual = funcion_puntaje(actual)
@@ -78,33 +59,31 @@ def recocido_simulado(
     paso = 1
 
     while T > T_min and puntaje_actual < 8:
-        for _ in range(iteraciones_por_paso):
-            columna_elegida = random.randint(0, 7)
-            nueva_fila = random.randint(0, 6)
-            if nueva_fila >= actual[columna_elegida]:
-                nueva_fila += 1
-            vecino = list(actual)
-            vecino[columna_elegida] = nueva_fila
-            puntaje_vecino = funcion_puntaje(vecino)
-            delta_E = puntaje_vecino - puntaje_actual
-            if delta_E > 0:
+        columna_elegida = random.randint(0, 7)
+        nueva_fila = random.randint(0, 6)
+        if nueva_fila >= actual[columna_elegida]:
+            nueva_fila += 1
+        vecino = list(actual)
+        vecino[columna_elegida] = nueva_fila
+        puntaje_vecino = funcion_puntaje(vecino)
+        delta_E = puntaje_vecino - puntaje_actual
+        if delta_E > 0:
+            actual = vecino
+            puntaje_actual = puntaje_vecino
+            historial_pasos.append(list(actual))
+        else:
+            probabilidad = math.exp(delta_E / T)
+            if random.random() < probabilidad:
                 actual = vecino
                 puntaje_actual = puntaje_vecino
                 historial_pasos.append(list(actual))
-            else:
-                probabilidad = math.exp(delta_E / T)
-                if random.random() < probabilidad:
-                    actual = vecino
-                    puntaje_actual = puntaje_vecino
-                    historial_pasos.append(list(actual))
-            if puntaje_actual == 8:
-                return historial_pasos
+        if puntaje_actual == 8:
+            return historial_pasos
+            
         if tipo_enfriamiento == "exponencial":
             T = alfa * T
-        elif tipo_enfriamiento == "lineal":
-            T = max(T - alfa, T_min)
         elif tipo_enfriamiento == "logaritmico":
-            T = T_inicial / math.log(1 + paso)
+            T = 2 / math.log(1 + paso)
         else:
             raise ValueError(
                 f"tipo_enfriamiento '{tipo_enfriamiento}' no reconocido. "
