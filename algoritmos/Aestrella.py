@@ -39,3 +39,4 @@ def a_estrella(grafo, heuristica, inicio, meta_func):
             contador += 1
             heapq.heappush(open_list, (f[vecino], contador, vecino))
     yield "FIN", None
+

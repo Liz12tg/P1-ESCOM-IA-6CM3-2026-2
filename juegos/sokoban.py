@@ -15,7 +15,6 @@ from algoritmos.GBFS import gbfs
 
 class Sokoban:
     def __init__(self, nivel=1):
-        # MAPAS ORIGINALES TOTALMENTE INTACTOS
         self.niveles = {
             1: [ 
                 [" "," ","#","#","#","#","#"," "],

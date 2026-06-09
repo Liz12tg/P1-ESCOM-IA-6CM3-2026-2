@@ -5,7 +5,7 @@ import math
 # como recocido simulado
 #recocido esta basado en metalurgia
 #permite movimientos peores temporalmente y usa propabilidad
-#P=eΔE/T
+#P=eΔE/T*
 #cuando la temperatura es alta acepta muchos errores
 #y si es baja se vuelve mas estricto 
 #se usan 3 enfriamentos 
@@ -22,6 +22,7 @@ def hill_climbing_estricto(reinas_iniciales, funcion_puntaje):
     actual = list(reinas_iniciales)
     puntaje_actual = funcion_puntaje(actual)
     historial_pasos = [list(actual)]
+    hj = 0
     while True:
         mejor_vecino = None
         mejor_puntaje_vecino = puntaje_actual
@@ -37,6 +38,13 @@ def hill_climbing_estricto(reinas_iniciales, funcion_puntaje):
         if mejor_vecino is None:
             break
         actual = mejor_vecino
+        hj = hj+1
+       
+        if(hj == 3):
+            print(actual)
+            print(vecino)
+            print(mejor_vecino)
+        
         puntaje_actual = mejor_puntaje_vecino
         historial_pasos.append(list(actual))
     return historial_pasos

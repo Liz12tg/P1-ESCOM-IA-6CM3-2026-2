@@ -14,6 +14,7 @@ class OchoReinas:
     def __init__(self):
         self.estado_inicial = [random.randint(0, 7) for _ in range(8)]
     @staticmethod
+    
     def calcular_puntaje(reinas):
         """ Cuenta cuántas reinas están completamente seguras (sin conflictos) """
         conteo_filas = {}

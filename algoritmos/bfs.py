@@ -1,5 +1,6 @@
 from collections import deque
 #exploración por niveles
+
 def bfs(inicio, meta, obtener_vecinos):
     cola = deque([inicio]) #estructura principal cola FIFO
     visitados = {inicio}
