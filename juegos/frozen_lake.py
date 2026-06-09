@@ -54,8 +54,8 @@ class FrozenLake:
         fila, col = estado #se separan las coordenadas
         movimientos = [
             (-1, 0), #arriba
+            (0, -1), #izquierda
             (1, 0), #abajo 
-            (0, -1), #izquierda 
             (0, 1) #derecha
         ]
         vecinos = []
